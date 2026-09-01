@@ -1,218 +1,193 @@
-# Aircraft 6-DOF Equations and Coding
+# Aircraft 6-DOF Flight Dynamics Simulator
 
-A from-scratch Python implementation of a six-degree-of-freedom (6-DOF) rigid-body aircraft simulation, developed progressively from the **Learn Guidance and Control — Aircraft 6-DOF Simulation Tutorial** by Ben Dickinson.
+A from-scratch, configurable nonlinear **six-degree-of-freedom aircraft flight-dynamics model (FDM)** in Python.
 
-> This repository is an independent educational implementation. It is not the original author's source code.
+The original learning chapters remain in the repository for traceability, but the canonical simulator is now under `src/aircraft6dof/`.
 
-## Goal
+## What is actually modeled
 
-The repository follows the playlist one chapter at a time. Each chapter turns the ideas from its corresponding lesson into working, testable Python code, with explanations, numerical checks, and visualizations.
+The canonical FDM includes:
 
-The long-term architecture is:
+- nonlinear rigid-body translational and rotational dynamics;
+- quaternion attitude propagation;
+- local North-East-Down navigation;
+- standard-atmosphere temperature, pressure, density and speed of sound;
+- latitude/altitude normal gravity;
+- steady wind;
+- deterministic one-minus-cosine gusts;
+- reproducible stochastic turbulence / Dryden-style shaping;
+- relative-air-velocity calculation;
+- angle of attack, sideslip, dynamic pressure and Mach;
+- nonlinear aerodynamic coefficient buildup;
+- static and dynamic stability derivatives;
+- aileron/elevator/rudder effects;
+- propulsion/thrust and thrust moments;
+- optional actuator dynamics with rate/position limits;
+- RK4 time integration;
+- unit/invariant tests;
+- executable examples and plots.
 
-```
-reference frames
-    ↓
-6-DOF rigid-body dynamics
-    ↓
-attitude kinematics
-    ↓
-atmosphere + aerodynamics
-    ↓
-propulsion + control surfaces
-    ↓
-trim + stability
-    ↓
-flight-control laws
-    ↓
-guidance / autonomy / RL
-```
+This is a **real nonlinear flight-dynamics framework**, but not a validated or flight-certified model of a particular aircraft. The default aerodynamic and propulsion parameters are generic demonstration values. High-fidelity results require aircraft-specific validated data.
 
-## Chapters
+## Core equations
 
-| Chapter | Topic | Status |
-|---|---|---|
-| 01 | 6-DOF equations of motion | Implemented |
-| 02 | Euler attitude kinematics | Implemented |
-| 03 | Navigation, atmosphere and aerodynamic quantities | Implemented |
-| 04 | Full flight-simulation assembly | Planned |
-| 05+ | Aircraft-specific models and control | Planned |
-
-## Chapter 01 — 6-DOF Equations
-
-Location: `chapter-01-6dof-equations/`
-
-This chapter implements the rigid-body dynamic core:
-
-### Translational dynamics
+Translational:
 
 ```
-m (v_dot + ω × v) = F
+m (v_dot + omega × v) = F
 ```
 
-or
+Rotational:
 
 ```
-v_dot = F/m - ω × v
+I omega_dot + omega × (I omega) = M
 ```
 
-### Rotational dynamics
+Quaternion:
 
 ```
-I ω_dot + ω × (I ω) = M
+q_dot = 1/2 q ⊗ [0, p, q, r]
 ```
 
-or
+Aerodynamic dynamic pressure:
 
 ```
-ω_dot = I⁻¹ [M - ω × (I ω)]
+qbar = 1/2 rho V^2
 ```
 
-where:
-
-- `v = [u, v, w]` is body-frame translational velocity.
-- `ω = [p, q, r]` is body-frame angular velocity.
-- `F = [X, Y, Z]` is the applied body-frame force.
-- `M = [L, M, N]` is the applied body-frame moment.
-- `I` is the inertia tensor.
-- `m` is vehicle mass.
-
-The implementation supports a general 3×3 inertia tensor rather than assuming a diagonal tensor.
-
-### Important correction from the source lesson
-
-The creator later published an erratum for the vector rotational equation. The correct coupling term is:
+Relative velocity:
 
 ```
-ω × (Iω)
+V_rel,N = V_aircraft,N - V_wind,N - V_gust,N
+V_rel,B = C_NB V_rel,N
 ```
 
-not:
+## Canonical architecture
 
 ```
-ω × v
+controller / pilot commands
+          ↓
+      actuators
+          ↓
+   control surfaces
+          ↓
+ ┌────────┴─────────┐
+ ↓                  ↓
+aerodynamics     propulsion
+ ↑                  ↑
+relative wind    throttle
+ ↑
+atmosphere + wind + gust
+          ↓
+   forces + moments
+          ↓
+  6-DOF rigid body
+          ↓
+ quaternion + position
+          ↓
+      integration
+          ↓
+       next state
 ```
 
-The code in this repository uses the corrected rigid-body equation.
+The canonical package is deliberately modular so aircraft-specific data can be substituted without rewriting the rigid-body equations.
 
-## Repository structure
+## Repository layout
 
 ```
 .
-├── README.md
-└── chapter-01-6dof-equations/
-    ├── README.md
-    ├── requirements.txt
-    ├── main.py
-    ├── plot_results.py
-    ├── aircraft6dof/
-    │   ├── __init__.py
-    │   ├── dynamics.py
-    │   └── integrators.py
-    └── tests/
-        ├── test_dynamics.py
-        └── test_integrators.py
+├── src/
+│   └── aircraft6dof/          # canonical simulator
+├── tests/                      # verification
+├── examples/                   # runnable demonstrations
+├── docs/
+│   ├── ARCHITECTURE.md
+│   └── EQUATIONS.md
+├── chapter-01-6dof-equations/
+├── chapter-02-euler-kinematics/
+├── chapter-03-navigation-atmosphere-aerodynamics/
+├── pyproject.toml
+└── .github/workflows/
+    └── core.yml
 ```
 
-## Quick start
+## Install
+
+Python 3.10+:
 
 ```bash
-cd chapter-01-6dof-equations
 python -m venv .venv
 ```
 
-Activate the environment:
-
-Windows PowerShell:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-Linux/macOS:
+Activate it, then:
 
 ```bash
-source .venv/bin/activate
+python -m pip install -e ".[dev]"
 ```
 
-Install dependencies:
+## Verify
+
+Run the complete test suite:
 
 ```bash
-pip install -r requirements.txt
+pytest
 ```
 
-Run the numerical simulation:
+The same checks run in GitHub Actions.
+
+## Run the example
 
 ```bash
-python main.py
+python examples/run_simulation.py
+python examples/plot_simulation.py
 ```
 
-Run the tests:
+Outputs are written to:
 
-```bash
-pytest -q
+```
+outputs/simulation.csv
+outputs/flight_history.png
 ```
 
-Generate the plots:
+## Validation philosophy
 
-```bash
-python plot_results.py
-```
+The simulator follows an incremental verification strategy:
 
-The plot script reads the CSV generated by `main.py` and writes a PNG into `outputs/`.
+1. verify mathematical identities and frame transformations;
+2. verify limiting cases such as zero rates, zero coefficients and zero wind;
+3. verify numerical integration behavior;
+4. verify environment models against standard reference values;
+5. only then introduce aircraft-specific data and controllers.
 
-## What this chapter deliberately does NOT claim to implement yet
+The goal is to prevent a numerically stable but physically incorrect simulator.
 
-This is the rigid-body **dynamic core**, not yet a complete aircraft flight model.
+## Fidelity roadmap
 
-It does not yet include:
+The next engineering layers are not additional tutorial copies. They are model-fidelity upgrades:
 
-- Euler-angle kinematic equations,
-- quaternion attitude propagation,
-- aerodynamic coefficient models,
-- atmosphere,
-- control-surface derivatives,
-- propulsion maps,
-- trim calculation,
-- stability derivatives,
-- guidance,
-- autopilot logic,
-- reinforcement learning.
+- full WGS-84 geodetic navigation and Earth rotation;
+- fully validated Dryden/MIL-F-8785C turbulence;
+- aircraft-specific aerodynamic databases / lookup tables;
+- engine/propeller performance maps;
+- actuator and sensor dynamics;
+- landing gear and ground contact;
+- trim and linearization tooling;
+- stability/mode analysis;
+- classical flight-control laws;
+- hardware-in-the-loop interfaces;
+- reinforcement-learning environment wrappers.
 
-Those belong in later chapters.
+## References
 
-## Verification philosophy
+The implementation is informed by established flight-dynamics formulations rather than treating the YouTube playlist as the authoritative source.
 
-Every new chapter will have:
+- JSBSim's current reference manual documents a nonlinear 6-DOF FDM, equations of motion, configurable aerodynamics/propulsion, and Earth/atmosphere modeling.
+- NASA technical material documents six-DOF aircraft simulation architectures and multiple Dryden turbulence implementations.
 
-1. equations written explicitly,
-2. a small, inspectable Python implementation,
-3. unit tests for physical/numerical invariants,
-4. a runnable demonstration,
-5. plots or other evidence of behavior,
-6. a chapter README explaining what the equations mean and why the code is structured that way.
+See [docs/EQUATIONS.md](docs/EQUATIONS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-The point is not merely to reproduce code. The point is to build a simulator whose assumptions and mathematics can be inspected, tested, and extended.
+## Status
 
+**Canonical simulator: active development**
 
-## Chapter 02 — Euler Attitude Kinematics
-
-Location: `chapter-02-euler-kinematics/`
-
-Adds 3-2-1 Euler-angle kinematics, body↔NED direction-cosine matrices, RK4 attitude propagation, singularity protection, tests, and plots.
-
-Core relationship:
-
-```text
-[phi_dot, theta_dot, psi_dot] = T(phi, theta) [p, q, r]
-```
-
-See the chapter README for the equations, assumptions, coordinate conventions, and run instructions.
-
-## Chapter 03 — Navigation, Atmosphere & Aerodynamics
-
-Location: `chapter-03-navigation-atmosphere-aerodynamics/`
-
-Adds the flight-environment layer: flat-Earth NED navigation, standard-atmosphere properties, wind/relative-air velocity, air-data quantities ((V,\alpha,\beta,q_\infty,M)), and coefficient-based aerodynamic force/moment conversion.
-
-The implementation is deliberately aircraft-agnostic so later chapters can insert a specific aerodynamic model and close the loop with the Chapter 01 rigid-body equations.
+Chapters 01–03 are retained as the learning trail; `src/aircraft6dof` is the source of truth for future development.
