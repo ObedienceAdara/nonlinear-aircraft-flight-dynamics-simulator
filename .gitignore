@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Test/cache
+.pytest_cache/
+.coverage
+
+# Chapter-generated outputs
+chapter-01-6dof-equations/outputs/*.csv
+chapter-01-6dof-equations/outputs/*.png
