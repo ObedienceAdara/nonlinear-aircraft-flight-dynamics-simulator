@@ -34,7 +34,7 @@ guidance / autonomy / RL
 |---|---|---|
 | 01 | 6-DOF equations of motion | Implemented |
 | 02 | Euler attitude kinematics | Implemented |
-| 03 | Navigation, atmosphere and aerodynamic quantities | Planned |
+| 03 | Navigation, atmosphere and aerodynamic quantities | Implemented |
 | 04 | Full flight-simulation assembly | Planned |
 | 05+ | Aircraft-specific models and control | Planned |
 
@@ -208,3 +208,11 @@ Core relationship:
 ```
 
 See the chapter README for the equations, assumptions, coordinate conventions, and run instructions.
+
+## Chapter 03 — Navigation, Atmosphere & Aerodynamics
+
+Location: `chapter-03-navigation-atmosphere-aerodynamics/`
+
+Adds the flight-environment layer: flat-Earth NED navigation, standard-atmosphere properties, wind/relative-air velocity, air-data quantities ((V,\alpha,\beta,q_\infty,M)), and coefficient-based aerodynamic force/moment conversion.
+
+The implementation is deliberately aircraft-agnostic so later chapters can insert a specific aerodynamic model and close the loop with the Chapter 01 rigid-body equations.
