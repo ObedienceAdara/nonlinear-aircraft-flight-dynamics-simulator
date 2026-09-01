@@ -50,3 +50,5 @@ Compare the simulator against:
 - independent analytical calculations.
 
 A simulator that merely produces plausible-looking plots is not validated.
+
+CI validation note: temporary pull-request validation branch.
