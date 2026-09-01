@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import numpy as np
-from .constants import WGS84_A,WGS84_B,WGS84_F,WGS84_A,WGS84_F
+from .constants import WGS84_A, WGS84_B
 
 
 def radii_of_curvature(latitude_rad:float)->tuple[float,float]:
