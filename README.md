@@ -33,7 +33,7 @@ guidance / autonomy / RL
 | Chapter | Topic | Status |
 |---|---|---|
 | 01 | 6-DOF equations of motion | Implemented |
-| 02 | Euler attitude kinematics | Planned |
+| 02 | Euler attitude kinematics | Implemented |
 | 03 | Navigation, atmosphere and aerodynamic quantities | Planned |
 | 04 | Full flight-simulation assembly | Planned |
 | 05+ | Aircraft-specific models and control | Planned |
@@ -193,3 +193,18 @@ Every new chapter will have:
 6. a chapter README explaining what the equations mean and why the code is structured that way.
 
 The point is not merely to reproduce code. The point is to build a simulator whose assumptions and mathematics can be inspected, tested, and extended.
+
+
+## Chapter 02 — Euler Attitude Kinematics
+
+Location: `chapter-02-euler-kinematics/`
+
+Adds 3-2-1 Euler-angle kinematics, body↔NED direction-cosine matrices, RK4 attitude propagation, singularity protection, tests, and plots.
+
+Core relationship:
+
+```text
+[phi_dot, theta_dot, psi_dot] = T(phi, theta) [p, q, r]
+```
+
+See the chapter README for the equations, assumptions, coordinate conventions, and run instructions.
