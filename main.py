@@ -83,13 +83,7 @@ def main() -> None:
         controls=controls,
         environment=environment,
     )
-    export_simulation(
-        history,
-        OUTPUT_DIR,
-        controls=controls,
-        environment=environment,
-        aircraft=simulator.aircraft,
-    )
+    export_simulation(history, OUTPUT_DIR, controls=controls, environment=environment, aircraft=simulator.aircraft)
     print("Aircraft 6-DOF simulation complete.")
     print(f"Output directory: {OUTPUT_DIR}")
     print(f"Samples: {len(history.time)}")
