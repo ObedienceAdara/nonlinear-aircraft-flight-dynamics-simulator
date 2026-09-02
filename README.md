@@ -21,38 +21,38 @@ The included aircraft is deliberately generic. This is an engineering-oriented s
 
 The simulator propagates a coupled translational/rotational aircraft state:
 
-\[
+$$
 \mathbf{x} =
 \begin{bmatrix}
 N & E & D & u & v & w & p & q & r & q_0 & q_1 & q_2 & q_3
 \end{bmatrix}^{T}
-\]
+$$
 
 where `N/E/D` are local North-East-Down position coordinates, `u/v/w` are body-axis velocities, `p/q/r` are body angular rates, and `q0...q3` form the attitude quaternion.
 
 The core equations are
 
-\[
+$$
 m(\dot{\mathbf v}+\boldsymbol\omega\times\mathbf v)=\mathbf F
-\]
+$$
 
-\[
+$$
 \mathbf I\dot{\boldsymbol\omega}+\boldsymbol\omega\times(\mathbf I\boldsymbol\omega)=\mathbf M
-\]
+$$
 
-\[
+$$
 \dot{\mathbf q}=\frac{1}{2}\mathbf q\otimes\begin{bmatrix}0&p&q&r\end{bmatrix}^{T}
-\]
+$$
 
 and aerodynamic loads are driven by relative air velocity:
 
-\[
+$$
 \mathbf V_{rel,NED}
 =
 \mathbf V_{aircraft,NED}
 -\mathbf V_{wind,NED}
 -\mathbf V_{gust,NED}.
-\]
+$$
 
 The air-data layer then derives airspeed `V`, angle of attack `alpha`, sideslip `beta`, dynamic pressure `qbar` and Mach number.
 
@@ -107,17 +107,17 @@ The aerodynamic model uses a coefficient-build-up approach driven by angle of at
 
 Representative longitudinal terms are of the form
 
-\[
-C_L=C_{L0}+C_{L_\alpha}\alpha+C_{L_{\delta_e}}\delta_e+C_{L_q}\frac{qc}{2V}
-\]
+$$
+C_L=C_{L0}+C_{L_{\alpha}}\alpha+C_{L_{\delta_e}}\delta_e+C_{L_q}\frac{qc}{2V}
+$$
 
-\[
+$$
 C_D=C_{D0}+C_{D_{\alpha^2}}\alpha^2+C_{D_{\delta_e^2}}\delta_e^2.
-\]
+$$
 
 Lateral/directional behavior is represented through `CY`, `Cl` and `Cn` derivatives with respect to sideslip, angular rates and control surfaces.
 
-The nondimensional coefficients are converted into dimensional loads using dynamic pressure, wing reference area, mean aerodynamic chord and span.
+The nondimensional coefficients are converted to dimensional loads using dynamic pressure, wing reference area, mean aerodynamic chord and span.
 
 This makes the architecture suitable for progressively replacing the generic derivative set with data from CFD, DATCOM, wind-tunnel testing or flight-test identification.
 
@@ -213,7 +213,7 @@ The output plots are intended as engineering diagnostics rather than decorative 
 | `aerodynamic_moments.png` | `Mx`, `My`, `Mz` | Stability/control moment response |
 | `control_inputs.png` | Aileron/elevator/rudder/throttle | Applied excitation/forcing history |
 | `wind_and_gust.png` | Steady wind and gust components | Disturbance injection and timing |
-| `dynamic_pressure.png` | \(\bar q=\frac12\rho V^2\) | Aerodynamic loading level |
+| `dynamic_pressure.png` | $\bar q=\frac12\rho V^2$ | Aerodynamic loading level |
 | `mach_number.png` | Mach number | Compressibility/flight-regime indicator |
 | `flight_path.png` | Flight-path angle | Climb/descent behavior |
 
