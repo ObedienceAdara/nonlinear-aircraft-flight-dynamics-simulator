@@ -38,39 +38,13 @@ outputs/
 └── simulation_summary.json
 ```
 
-`simulation.csv` contains the full time history of position, altitude, body/NED velocity, attitude, quaternion state, angular rates, aerodynamic angles, dynamic pressure, Mach number, aerodynamic coefficients, aerodynamic forces and moments, propulsion, control inputs, wind, gust and atmosphere.
+## Verification
 
-The PNG pack provides dedicated engineering views for trajectory, attitude, navigation, velocity, angular rates, aerodynamic state, forces, moments, controls, atmosphere, wind/gust, propulsion, dynamic pressure, Mach and flight-path angle.
-
-## Architecture
-
-```text
-main.py
-  │
-  ├── aircraft definition
-  ├── control schedule
-  └── atmosphere / wind / gust
-  │
-  ▼
-Simulator + RK4
-  │
-  ▼
-nonlinear 6-DOF equations
-  ├── aerodynamics
-  ├── propulsion
-  ├── gravity
-  ├── quaternion attitude
-  └── navigation
-  │
-  ▼
-SimulationHistory
-  │
-  ▼
-reporting.py
-  ├── simulation.csv
-  ├── simulation_summary.json
-  └── engineering plots
+```bash
+pytest
 ```
+
+GitHub Actions verifies the test suite and executes `python main.py` as an end-to-end project check.
 
 ## Repository layout
 
@@ -79,24 +53,7 @@ reporting.py
 ├── main.py
 ├── requirements.txt
 ├── pyproject.toml
-├── src/
-│   └── aircraft6dof/
-│       ├── aircraft.py
-│       ├── actuators.py
-│       ├── aero.py
-│       ├── atmosphere.py
-│       ├── constants.py
-│       ├── equations.py
-│       ├── frames.py
-│       ├── geodesy.py
-│       ├── gravity.py
-│       ├── integrators.py
-│       ├── mathutils.py
-│       ├── propulsion.py
-│       ├── reporting.py
-│       ├── simulation.py
-│       ├── state.py
-│       └── wind.py
+├── src/aircraft6dof/
 ├── tests/
 └── docs/
 ```
@@ -114,14 +71,6 @@ q_dot = 1/2 q ⊗ [0, p, q, r]
 qbar = 1/2 rho V²
 V_rel,N = V_aircraft,N - V_wind,N - V_gust,N
 ```
-
-## Verification
-
-```bash
-pytest
-```
-
-GitHub Actions runs the verification suite and then executes `python main.py` as an end-to-end project check.
 
 ## Fidelity boundary
 
