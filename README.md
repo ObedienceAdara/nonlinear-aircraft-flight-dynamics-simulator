@@ -38,6 +38,8 @@ outputs/
 └── simulation_summary.json
 ```
 
+`simulation.csv` contains the full time history of position, altitude, body/NED velocity, attitude, quaternion state, angular rates, aerodynamic angles, dynamic pressure, Mach number, aerodynamic coefficients, aerodynamic forces and moments, propulsion, control inputs, wind, gust and atmosphere.
+
 ## Verification
 
 ```bash
