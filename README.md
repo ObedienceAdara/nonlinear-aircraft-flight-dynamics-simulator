@@ -2,11 +2,9 @@
 
 A from-scratch, configurable nonlinear **six-degree-of-freedom aircraft flight-dynamics model (FDM)** in Python.
 
-The original learning chapters remain in the repository for traceability, but the canonical simulator is now under `src/aircraft6dof/`.
+The repository now has one canonical implementation under `src/aircraft6dof/` and one project-level executable entry point: `main.py`.
 
-## What is actually modeled
-
-The canonical FDM includes:
+## What is modeled
 
 - nonlinear rigid-body translational and rotational dynamics;
 - quaternion attitude propagation;
@@ -24,152 +22,196 @@ The canonical FDM includes:
 - propulsion/thrust and thrust moments;
 - optional actuator dynamics with rate/position limits;
 - RK4 time integration;
-- unit/invariant tests;
-- executable examples and plots.
+- verification tests;
+- automatic CSV/JSON data export;
+- automatic engineering visualization generation.
 
-This is a **real nonlinear flight-dynamics framework**, but not a validated or flight-certified model of a particular aircraft. The default aerodynamic and propulsion parameters are generic demonstration values. High-fidelity results require aircraft-specific validated data.
+This is a **nonlinear flight-dynamics framework**, not a validated or flight-certified model of a particular aircraft. The default aerodynamic and propulsion parameters are generic demonstration values. High-fidelity aircraft results require aircraft-specific validated geometry, mass properties, aerodynamic databases, propulsion maps and environmental/actuator models.
 
-## Core equations
+## Run the complete project
 
-Translational:
-
-```
-m (v_dot + omega × v) = F
-```
-
-Rotational:
-
-```
-I omega_dot + omega × (I omega) = M
-```
-
-Quaternion:
-
-```
-q_dot = 1/2 q ⊗ [0, p, q, r]
-```
-
-Aerodynamic dynamic pressure:
-
-```
-qbar = 1/2 rho V^2
-```
-
-Relative velocity:
-
-```
-V_rel,N = V_aircraft,N - V_wind,N - V_gust,N
-V_rel,B = C_NB V_rel,N
-```
-
-## Canonical architecture
-
-```
-controller / pilot commands
-          ↓
-      actuators
-          ↓
-   control surfaces
-          ↓
- ┌────────┴─────────┐
- ↓                  ↓
-aerodynamics     propulsion
- ↑                  ↑
-relative wind    throttle
- ↑
-atmosphere + wind + gust
-          ↓
-   forces + moments
-          ↓
-  6-DOF rigid body
-          ↓
- quaternion + position
-          ↓
-      integration
-          ↓
-       next state
-```
-
-The canonical package is deliberately modular so aircraft-specific data can be substituted without rewriting the rigid-body equations.
-
-## Repository layout
-
-```
-.
-├── src/
-│   └── aircraft6dof/          # canonical simulator
-├── tests/                      # verification
-├── examples/                   # runnable demonstrations
-├── docs/
-│   ├── ARCHITECTURE.md
-│   └── EQUATIONS.md
-├── chapter-01-6dof-equations/
-├── chapter-02-euler-kinematics/
-├── chapter-03-navigation-atmosphere-aerodynamics/
-├── pyproject.toml
-└── .github/workflows/
-    └── core.yml
-```
-
-## Install
-
-Python 3.10+:
+From the repository root:
 
 ```bash
 python -m venv .venv
 ```
 
-Activate it, then:
+Activate the environment and install dependencies:
 
 ```bash
-python -m pip install -e ".[dev]"
+python -m pip install -r requirements.txt
 ```
 
-## Verify
+Then run the complete simulation and reporting pipeline:
 
-Run the complete test suite:
+```bash
+python main.py
+```
+
+A single run performs the nonlinear simulation, evaluates the derived flight-dynamics quantities, writes the complete time history, generates the engineering plots and creates a JSON summary.
+
+## Generated output
+
+Every run writes to `outputs/`:
+
+```text
+outputs/
+├── simulation.csv
+├── flight_history.png
+├── trajectory_3d.png
+├── attitude.png
+├── position_ned.png
+├── velocity.png
+├── angular_rates.png
+├── aerodynamic_angles.png
+├── aerodynamic_forces.png
+├── aerodynamic_moments.png
+├── control_inputs.png
+├── atmospheric_state.png
+├── wind_and_gust.png
+├── propulsion.png
+├── dynamic_pressure.png
+├── mach_number.png
+├── flight_path.png
+└── simulation_summary.json
+```
+
+### `simulation.csv`
+
+The machine-readable time history contains position, altitude, body/NED velocity, attitude, quaternion state, angular rates, aerodynamic angles, dynamic pressure, Mach number, aerodynamic coefficients, aerodynamic forces and moments, propulsion, control inputs, wind, gust and atmospheric quantities.
+
+### Engineering plots
+
+The PNG plot pack provides separate views of:
+
+- complete flight history;
+- 3D trajectory;
+- roll/pitch/yaw attitude;
+- North/East/Down position;
+- body and airspeed velocity;
+- p/q/r angular rates;
+- angle of attack and sideslip;
+- aerodynamic forces and moments;
+- control-surface commands and throttle;
+- atmospheric temperature, pressure and density;
+- steady wind and deterministic gust;
+- propulsion thrust;
+- dynamic pressure;
+- Mach number;
+- flight-path angle.
+
+## Verify the implementation
 
 ```bash
 pytest
 ```
 
-The same checks run in GitHub Actions.
+The same core verification is run in GitHub Actions, followed by `python main.py` as an end-to-end execution check.
 
-## Run the example
+## Architecture
 
-```bash
-python examples/run_simulation.py
-python examples/plot_simulation.py
+```text
+project-level main.py
+        │
+        ├── aircraft definition
+        ├── control schedule
+        ├── atmosphere / wind / gust
+        │
+        ▼
+   Simulator + RK4
+        │
+        ▼
+ nonlinear 6-DOF equations
+        │
+        ├── aerodynamics
+        ├── propulsion
+        ├── gravity
+        ├── quaternion attitude
+        └── navigation
+        │
+        ▼
+ SimulationHistory
+        │
+        ▼
+ reporting.py
+        ├── simulation.csv
+        ├── simulation_summary.json
+        └── engineering plots
 ```
 
-Outputs are written to:
+## Repository layout
 
+```text
+.
+├── main.py
+├── requirements.txt
+├── pyproject.toml
+├── src/
+│   └── aircraft6dof/
+│       ├── aircraft.py
+│       ├── actuators.py
+│       ├── aero.py
+│       ├── atmosphere.py
+│       ├── constants.py
+│       ├── equations.py
+│       ├── frames.py
+│       ├── geodesy.py
+│       ├── gravity.py
+│       ├── integrators.py
+│       ├── mathutils.py
+│       ├── propulsion.py
+│       ├── reporting.py
+│       ├── simulation.py
+│       ├── state.py
+│       └── wind.py
+├── tests/
+└── docs/
 ```
-outputs/simulation.csv
-outputs/flight_history.png
+
+## Core equations
+
+Translational:
+
+```text
+m (v_dot + omega × v) = F
 ```
 
-## Validation philosophy
+Rotational:
 
-The simulator follows an incremental verification strategy:
+```text
+I omega_dot + omega × (I omega) = M
+```
 
-1. verify mathematical identities and frame transformations;
-2. verify limiting cases such as zero rates, zero coefficients and zero wind;
-3. verify numerical integration behavior;
-4. verify environment models against standard reference values;
-5. only then introduce aircraft-specific data and controllers.
+Quaternion:
 
-The goal is to prevent a numerically stable but physically incorrect simulator.
+```text
+q_dot = 1/2 q ⊗ [0, p, q, r]
+```
 
-## Fidelity roadmap
+Aerodynamic dynamic pressure:
 
-The next engineering layers are not additional tutorial copies. They are model-fidelity upgrades:
+```text
+qbar = 1/2 rho V²
+```
+
+Relative velocity:
+
+```text
+V_rel,N = V_aircraft,N - V_wind,N - V_gust,N
+V_rel,B = C_NB V_rel,N
+```
+
+## Validation boundary
+
+The project is intentionally explicit about model fidelity. The current canonical implementation uses a local flat-Earth NED rigid-body formulation with generic aerodynamic and propulsion parameters. It does not claim aircraft-specific validation, certification, full Earth-rotation navigation, exact MIL-F-8785C Dryden implementation, CFD-derived coefficient tables, or flight-test correlation.
+
+The next fidelity layers are:
 
 - full WGS-84 geodetic navigation and Earth rotation;
-- fully validated Dryden/MIL-F-8785C turbulence;
-- aircraft-specific aerodynamic databases / lookup tables;
+- validated Dryden/MIL-F-8785C turbulence;
+- aircraft-specific aerodynamic lookup tables;
 - engine/propeller performance maps;
-- actuator and sensor dynamics;
+- integrated actuator and sensor dynamics;
 - landing gear and ground contact;
 - trim and linearization tooling;
 - stability/mode analysis;
@@ -177,17 +219,4 @@ The next engineering layers are not additional tutorial copies. They are model-f
 - hardware-in-the-loop interfaces;
 - reinforcement-learning environment wrappers.
 
-## References
-
-The implementation is informed by established flight-dynamics formulations rather than treating the YouTube playlist as the authoritative source.
-
-- JSBSim's current reference manual documents a nonlinear 6-DOF FDM, equations of motion, configurable aerodynamics/propulsion, and Earth/atmosphere modeling.
-- NASA technical material documents six-DOF aircraft simulation architectures and multiple Dryden turbulence implementations.
-
-See [docs/EQUATIONS.md](docs/EQUATIONS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## Status
-
-**Canonical simulator: active development**
-
-Chapters 01–03 are retained as the learning trail; `src/aircraft6dof` is the source of truth for future development.
+See `docs/EQUATIONS.md`, `docs/ARCHITECTURE.md` and `docs/VALIDATION.md`.
