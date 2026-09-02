@@ -1,8 +1,18 @@
-"""Project-level entry point for the Aircraft 6-DOF simulator."""
+"""Project-level entry point for the Aircraft 6-DOF simulator.
+
+Run from the repository root with ``python main.py``. The run exports a
+complete engineering data set and visualization pack to ``outputs/``.
+"""
 
 from pathlib import Path
+import sys
 
 import numpy as np
+
+ROOT = Path(__file__).resolve().parent
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 from aircraft6dof import AircraftModel, AircraftState, ControlInput, Environment, Simulator, VehicleGeometry
 from aircraft6dof.aero import AeroCoefficients
@@ -12,7 +22,6 @@ from aircraft6dof.propulsion import Propulsion
 from aircraft6dof.reporting import export_simulation
 from aircraft6dof.wind import OneMinusCosineGust
 
-ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "outputs"
 
 
@@ -34,7 +43,7 @@ def build_aircraft() -> AircraftModel:
         Cn_beta=0.18, Cn_p=-0.06, Cn_r=-0.20, Cn_da=0.02, Cn_dr=-0.10,
     )
     propulsion = Propulsion(
-        max_thrust_n=4200.0,
+        max_thrust_N=4200.0,
         thrust_velocity_factor=0.25,
         thrust_arm_m=np.array([-1.2, 0.0, 0.0]),
     )
@@ -60,7 +69,8 @@ def controls(t: float) -> ControlInput:
 
 
 def environment(t: float) -> Environment:
-    atm = standard_atmosphere(1000.0)
+    altitude_m = 1000.0
+    atm = standard_atmosphere(altitude_m)
     gust = OneMinusCosineGust(
         amplitude_m_s=np.array([0.0, 4.0, 2.0]), start_s=10.0, duration_s=12.0
     )
@@ -75,18 +85,14 @@ def environment(t: float) -> Environment:
 
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    simulator = Simulator(build_aircraft())
-    history = simulator.run(
-        initial_state=initial_state(),
-        duration_s=40.0,
-        dt_s=0.02,
-        controls=controls,
-        environment=environment,
-    )
-    export_simulation(history, OUTPUT_DIR, controls=controls, environment=environment, aircraft=simulator.aircraft)
+    aircraft = build_aircraft()
+    simulator = Simulator(aircraft)
+    history = simulator.run(initial_state(), controls, environment, duration_s=40.0, dt_s=0.02)
+    export_simulation(history, OUTPUT_DIR, controls=controls, environment=environment, aircraft=aircraft)
     print("Aircraft 6-DOF simulation complete.")
     print(f"Output directory: {OUTPUT_DIR}")
-    print(f"Samples: {len(history.time)}")
+    print(f"Samples: {len(history.time_s)}")
+    print("Generated simulation.csv, simulation_summary.json, and 16 engineering plots.")
 
 
 if __name__ == "__main__":
