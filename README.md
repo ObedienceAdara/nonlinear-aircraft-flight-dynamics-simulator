@@ -1,17 +1,17 @@
 # Aircraft 6-DOF Flight Dynamics Simulator
 
-> A from-scratch nonlinear rigid-body aircraft flight-dynamics simulator in Python, built around six-degree-of-freedom equations of motion, quaternion attitude propagation, aerodynamic force/moment buildup, atmosphere and wind models, numerical integration, verification tests, and reproducible engineering outputs.
+> A from-scratch nonlinear rigid-body aircraft flight-dynamics simulator in Python, built around six-degree-of-freedom equations of motion, quaternion attitude propagation, aerodynamic force/moment[...]
 
-[![CI](https://github.com/ObedienceAdara/Aircraft-6-DOF-Equations-and-Coding/actions/workflows/core.yml/badge.svg)](https://github.com/ObedienceAdara/Aircraft-6-DOF-Equations-and-Coding/actions/workflows/core.yml)
+[![CI](https://github.com/ObedienceAdara/Aircraft-6-DOF-Equations-and-Coding/actions/workflows/core.yml/badge.svg)](https://github.com/ObedienceAdara/Aircraft-6-DOF-Equations-and-Coding/actions/wor[...]
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![NumPy](https://img.shields.io/badge/NumPy-2.x-013243?logo=numpy&logoColor=white)](https://numpy.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ## Project overview
 
-This repository implements a configurable six-degree-of-freedom (6-DOF) aircraft flight-dynamics model (FDM) rather than a pre-built black-box flight simulator. The purpose is to keep the equations, assumptions, force/moment models, numerical integration and generated results inspectable from source.
+This repository implements a configurable six-degree-of-freedom (6-DOF) aircraft flight-dynamics model (FDM) rather than a pre-built black-box flight simulator. The purpose is to keep the equation[...]
 
-The formulation follows standard nonlinear rigid-body flight-dynamics practice. The primary formulation reference is Stevens, Lewis & Johnson, *Aircraft Control and Simulation*, 3rd ed. [1]. JSBSim is used as a useful open-source architecture/formulation comparison point, not as a runtime dependency. [2]
+The formulation follows standard nonlinear rigid-body flight-dynamics practice. The primary formulation reference is Stevens, Lewis & Johnson, *Aircraft Control and Simulation*, 3rd ed. [1]. JSBSi[...]
 
 The included aircraft is deliberately generic. This is an engineering-oriented simulation framework and learning/research platform, not a validated digital twin of a particular aircraft.
 
@@ -47,11 +47,7 @@ $$
 and aerodynamic loads are driven by relative air velocity:
 
 $$
-\mathbf V_{rel,NED}
-=
-\mathbf V_{aircraft,NED}
--\mathbf V_{wind,NED}
--\mathbf V_{gust,NED}.
+\mathbf{V}_{\text{rel},\text{NED}} \;=\; \mathbf{V}_{\text{aircraft},\text{NED}} \;-\; \mathbf{V}_{\text{wind},\text{NED}} \; -\; \mathbf{V}_{\text{gust},\text{NED}}.
 $$
 
 The air-data layer then derives airspeed `V`, angle of attack `alpha`, sideslip `beta`, dynamic pressure `qbar` and Mach number.
@@ -149,7 +145,7 @@ forces / moments
 6-DOF aircraft response
 ```
 
-The stochastic implementation is explicitly described as **Dryden-style**, not as a certification-grade implementation of MIL-F-8785C. MIL-F-8785C remains a useful historical flying-qualities reference, but the document is inactive and a reference to it is not a validation claim.
+The stochastic implementation is explicitly described as **Dryden-style**, not as a certification-grade implementation of MIL-F-8785C. MIL-F-8785C remains a useful historical flying-qualities ref[...]
 
 ---
 
@@ -219,7 +215,7 @@ The output plots are intended as engineering diagnostics rather than decorative 
 
 A useful workflow is to inspect the disturbance, aerodynamic state, loads and aircraft response together rather than judging the trajectory alone.
 
-> **Reproducibility note:** generated PNG/CSV/JSON artifacts are intentionally ignored by Git so a clone starts clean. For a formal experiment or portfolio case study, selected result plots should be copied into a versioned `docs/figures/` directory and tied to the exact model revision and case configuration that produced them.
+> **Reproducibility note:** generated PNG/CSV/JSON artifacts are intentionally ignored by Git so a clone starts clean. For a formal experiment or portfolio case study, selected result plots shoul[...]
 
 ---
 
@@ -234,7 +230,7 @@ Once the case has run, the exported data can be used to investigate questions su
 - Are dynamic pressure and Mach number evolving consistently with airspeed and altitude?
 - Does the aircraft remain numerically stable for the selected timestep?
 
-These are model-verification questions, not evidence that the generic aircraft is physically representative of a real vehicle.
+These are model-verification questions, not evidence that the generic aircraft model is physically representative of a real vehicle.
 
 ---
 
@@ -289,7 +285,7 @@ Verification asks whether the software correctly implements the intended mathema
 
 ### Validation
 
-Validation asks whether the mathematical model represents the physical aircraft/environment with adequate accuracy. That requires comparison against independent analytical solutions, published reference cases, another trusted FDM, wind-tunnel data, CFD, flight-test data or other appropriate evidence.
+Validation asks whether the mathematical model represents the physical aircraft/environment with adequate accuracy. That requires comparison against independent analytical solutions, published re[...]
 
 Passing the unit tests does **not** mean the aircraft model is validated.
 
@@ -360,7 +356,7 @@ The canonical tree contains one coherent FDM rather than separate tutorial/chapt
 
 ## Technical references
 
-1. **Stevens, B. L., Lewis, F. L., & Johnson, E. N.** *Aircraft Control and Simulation: Dynamics, Controls Design, and Autonomous Systems*, 3rd ed., Wiley, 2015/2016. Primary reference for aircraft dynamics, control and simulation formulation.
+1. **Stevens, B. L., Lewis, F. L., & Johnson, E. N.** *Aircraft Control and Simulation: Dynamics, Controls Design, and Autonomous Systems*, 3rd ed., Wiley, 2015/2016. Primary reference for aircra[...]
    - https://onlinelibrary.wiley.com/doi/book/10.1002/9781119174882
 
 2. **JSBSim Reference Manual.** Nonlinear 6-DOF flight-dynamics architecture and formulation reference.
