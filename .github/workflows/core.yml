@@ -3,17 +3,19 @@ name: Canonical FDM CI
 on:
   push:
     paths:
+      - "main.py"
       - "src/**"
       - "tests/**"
-      - "examples/**"
       - "pyproject.toml"
+      - "requirements.txt"
       - ".github/workflows/core.yml"
   pull_request:
     paths:
+      - "main.py"
       - "src/**"
       - "tests/**"
-      - "examples/**"
       - "pyproject.toml"
+      - "requirements.txt"
       - ".github/workflows/core.yml"
 
 jobs:
@@ -26,4 +28,4 @@ jobs:
           python-version: "3.11"
       - run: python -m pip install -e ".[dev]"
       - run: pytest
-      - run: python examples/run_simulation.py
+      - run: python main.py
