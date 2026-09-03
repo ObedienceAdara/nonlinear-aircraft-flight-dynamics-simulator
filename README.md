@@ -2,7 +2,7 @@
 
 > A from-scratch nonlinear rigid-body aircraft flight-dynamics simulator in Python, built around six-degree-of-freedom equations of motion, quaternion attitude propagation, aerodynamic force/moment[...]
 
-[![CI](https://github.com/ObedienceAdara/nonlinear-aircraft-flight-dynamics-simulator/actions/workflows/core.yml/badge.svg)
+[![CI](https://github.com/ObedienceAdara/nonlinear-aircraft-flight-dynamics-simulator/actions/workflows/core.yml/badge.svg)] 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![NumPy](https://img.shields.io/badge/NumPy-2.x-013243?logo=numpy&logoColor=white)](https://numpy.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
