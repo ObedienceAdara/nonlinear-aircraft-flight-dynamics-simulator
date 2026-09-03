@@ -50,7 +50,7 @@ $$
 \mathbf{V}_{\text{rel},\text{NED}} \;=\; \mathbf{V}_{\text{aircraft},\text{NED}} \;-\; \mathbf{V}_{\text{wind},\text{NED}} \; -\; \mathbf{V}_{\text{gust},\text{NED}}.
 $$
 
-The air-data layer then derives airspeed `V`, angle of attack `alpha`, sideslip `beta`, dynamic pressure `qbar` and Mach number.
+The air-data layer then derives airspeed $V$, angle of attack $\alpha$, sideslip $\beta$, dynamic pressure $\bar q$, and Mach number $M$.
 
 ---
 
@@ -111,9 +111,9 @@ $$
 C_D=C_{D0}+C_{D_{\alpha^2}}\alpha^2+C_{D_{\delta_e^2}}\delta_e^2.
 $$
 
-Lateral/directional behavior is represented through `CY`, `Cl` and `Cn` derivatives with respect to sideslip, angular rates and control surfaces.
+Lateral/directional behavior is represented through $C_Y$, $C_l$, and $C_n$ derivatives with respect to sideslip, angular rates, and control surfaces.
 
-The nondimensional coefficients are converted to dimensional loads using dynamic pressure, wing reference area, mean aerodynamic chord and span.
+The nondimensional coefficients are converted to dimensional loads using dynamic pressure $\bar q$, wing reference area $S$, mean aerodynamic chord $c$, and wing span $b$.
 
 This makes the architecture suitable for progressively replacing the generic derivative set with data from CFD, DATCOM, wind-tunnel testing or flight-test identification.
 
@@ -203,10 +203,10 @@ The output plots are intended as engineering diagnostics rather than decorative 
 |---|---|---|
 | `trajectory_3d.png` | 3-D North/East/Altitude trajectory | Overall translational response |
 | `attitude.png` | Roll, pitch and yaw histories | Coupled rigid-body attitude response |
-| `angular_rates.png` | `p`, `q`, `r` | Rotational dynamics and damping |
-| `aerodynamic_angles.png` | `alpha`, `beta` | Aerodynamic operating condition |
-| `aerodynamic_forces.png` | `Fx`, `Fy`, `Fz` | Force-model response and sign checks |
-| `aerodynamic_moments.png` | `Mx`, `My`, `Mz` | Stability/control moment response |
+| `angular_rates.png` | $p$, $q$, $r$ | Rotational dynamics and damping |
+| `aerodynamic_angles.png` | $\alpha$, $\beta$ | Aerodynamic operating condition |
+| `aerodynamic_forces.png` | $F_x$, $F_y$, $F_z$ | Force-model response and sign checks |
+| `aerodynamic_moments.png` | $M_x$, $M_y$, $M_z$ | Stability/control moment response |
 | `control_inputs.png` | Aileron/elevator/rudder/throttle | Applied excitation/forcing history |
 | `wind_and_gust.png` | Steady wind and gust components | Disturbance injection and timing |
 | `dynamic_pressure.png` | $\bar q=\frac12\rho V^2$ | Aerodynamic loading level |
@@ -224,7 +224,7 @@ A useful workflow is to inspect the disturbance, aerodynamic state, loads and ai
 Once the case has run, the exported data can be used to investigate questions such as:
 
 - Does the aircraft respond in the expected direction to aileron, elevator and rudder inputs?
-- Does the gust produce a measurable change in `beta` and lateral/directional loads?
+- Does the gust produce a measurable change in $\beta$ and lateral/directional loads?
 - Do aerodynamic moments change consistently with the imposed control derivatives?
 - Are the quaternion components remaining normalized?
 - Are dynamic pressure and Mach number evolving consistently with airspeed and altitude?
