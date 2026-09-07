@@ -1,14 +1,23 @@
+import importlib.util
+from pathlib import Path
+
 import numpy as np
 
 import aircraft6dof.equations as equations_module
 import aircraft6dof.integrators as integrators_module
 import aircraft6dof.mathutils as mathutils
-import main as demo
 from aircraft6dof.integrators import rk4_step
 from aircraft6dof.mathutils import dcm_body_to_ned_from_quat, euler321_from_quat, quat_multiply
 from aircraft6dof.reporting import _series
 from aircraft6dof.simulation import Simulator
 from aircraft6dof.state import AircraftState
+
+
+_MAIN_PATH = Path(__file__).resolve().parents[1] / "main.py"
+_MAIN_SPEC = importlib.util.spec_from_file_location("fdm_demo_main", _MAIN_PATH)
+demo = importlib.util.module_from_spec(_MAIN_SPEC)
+assert _MAIN_SPEC.loader is not None
+_MAIN_SPEC.loader.exec_module(demo)
 
 
 def test_normalize_quaternion_only_enforces_unit_norm():
