@@ -25,8 +25,8 @@ class SimulationGuardConfig:
     enabled: bool = True
     max_airspeed_m_s: float | None = 400.0
     max_angular_rate_rad_s: float | None = 12.0
-    max_abs_alpha_rad: float | None = float(np.deg2rad(85.0))
-    max_abs_beta_rad: float | None = float(np.deg2rad(85.0))
+    max_abs_alpha_rad: float | None = float(np.deg2rad(89.5))
+    max_abs_beta_rad: float | None = float(np.deg2rad(89.5))
     history_size: int = 10
 
     def __post_init__(self):
