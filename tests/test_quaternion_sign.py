@@ -3,7 +3,6 @@ from pathlib import Path
 
 import numpy as np
 
-import main as demo_main
 import aircraft6dof.mathutils as mathutils
 from aircraft6dof.integrators import rk4_step
 from aircraft6dof.mathutils import dcm_body_to_ned_from_quat, euler321_from_quat, quat_multiply
