@@ -130,6 +130,14 @@ class Simulator:
             ("sideslip_angle", abs(beta), guard.max_abs_beta_rad, "|sideslip|"),
         )
         for field, value, limit, label in checks:
+            if not np.isfinite(value):
+                raise SimulationDivergenceError(
+                    time_s=time_s,
+                    step_index=step_index,
+                    field=field,
+                    reason=f"{label} became non-finite: value={value!r}",
+                    last_valid_states=[],
+                )
             if limit is not None and value > limit:
                 raise SimulationDivergenceError(
                     time_s=time_s,
