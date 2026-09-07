@@ -10,7 +10,15 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from aircraft6dof import AircraftModel, AircraftState, ControlInput, Environment, Simulator, VehicleGeometry
+from aircraft6dof import (
+    AircraftModel,
+    AircraftState,
+    ControlInput,
+    Environment,
+    SimulationDivergenceError,
+    Simulator,
+    VehicleGeometry,
+)
 from aircraft6dof.actuators import ActuatorChannel, ActuatorSet
 from aircraft6dof.aero import AeroCoefficients
 from aircraft6dof.atmosphere import standard_atmosphere
@@ -70,9 +78,9 @@ def build_actuators() -> ActuatorSet:
 
     No aircraft-specific actuator time constants, rate limits, or position
     limits were defined anywhere in the repository before this fix. The values
-    below are therefore explicit *provisional simulation-case assumptions*,
-    not identified hardware data. Replace them with actuator/vendor/flight-test
-    data when a specific aircraft model is introduced.
+    below are explicit *provisional simulation-case assumptions*, not identified
+    hardware data. Replace them with actuator/vendor/flight-test data when a
+    specific aircraft model is introduced.
 
     The selected limits are intentionally well above the maneuver's requested
     surface steps, so the response is dominated by the actuator time constant
@@ -131,30 +139,36 @@ def environment(t: float) -> Environment:
     )
 
 
-def main() -> None:
+def main() -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     aircraft = build_aircraft()
     actuators = build_actuators()
-    history = Simulator(aircraft).run(
-        initial_state(),
-        controls,
-        environment,
-        duration_s=40.0,
-        dt_s=0.02,
-        actuators=actuators,
-    )
-    export_simulation(
-        history,
-        OUTPUT_DIR,
-        controls=controls,
-        environment=environment,
-        aircraft=aircraft,
-    )
+    try:
+        history = Simulator(aircraft).run(
+            initial_state(),
+            controls,
+            environment,
+            duration_s=40.0,
+            dt_s=0.02,
+            actuators=actuators,
+        )
+        export_simulation(
+            history,
+            OUTPUT_DIR,
+            controls=controls,
+            environment=environment,
+            aircraft=aircraft,
+        )
+    except SimulationDivergenceError as exc:
+        print(exc.report(), file=sys.stderr)
+        return 2
+
     print("Aircraft 6-DOF simulation complete.")
     print(f"Output directory: {OUTPUT_DIR}")
     print(f"Samples: {len(history.time_s)}")
     print("Generated simulation.csv, simulation_summary.json, and engineering plots.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
