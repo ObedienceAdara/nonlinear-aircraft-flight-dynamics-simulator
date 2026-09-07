@@ -21,9 +21,9 @@ class RecordingAircraft:
 
 def make_actuators():
     return ActuatorSet(
-        aileron=ActuatorChannel(np.array(0.15), np.deg2rad(80.0), np.deg2rad(25.0)),
-        elevator=ActuatorChannel(np.array(0.20), np.deg2rad(50.0), np.deg2rad(25.0)),
-        rudder=ActuatorChannel(np.array(0.20), np.deg2rad(40.0), np.deg2rad(30.0)),
+        aileron=ActuatorChannel(0.15, np.deg2rad(80.0), np.deg2rad(25.0)),
+        elevator=ActuatorChannel(0.20, np.deg2rad(50.0), np.deg2rad(25.0)),
+        rudder=ActuatorChannel(0.20, np.deg2rad(40.0), np.deg2rad(30.0)),
     )
 
 
