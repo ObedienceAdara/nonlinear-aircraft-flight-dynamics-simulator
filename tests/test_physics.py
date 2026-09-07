@@ -26,6 +26,6 @@ def test_gravity_only_at_level_attitude():
 
 def test_zero_relative_speed_has_zero_aero_loads():
     s=AircraftState(np.zeros(3),np.zeros(3),np.zeros(3),quat_from_euler321(0,0,0))
-    e=Environment(wind_ned_m_s2=np.zeros(3),gust_ned_m_s=np.zeros(3),gravity_ned_m_s2=np.zeros(3))
+    e=Environment(wind_ned_m_s=np.zeros(3),gust_ned_m_s=np.zeros(3),gravity_ned_m_s2=np.zeros(3))
     d=state_derivative(s,ControlInput(),e,params())
     assert np.isfinite(d.vector()).all()
