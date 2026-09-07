@@ -219,7 +219,7 @@ class Simulator:
                     step_index=i + 1,
                     field="rk4_output_state",
                     reason=str(exc),
-                    last_valid_states=recent_valid,
+                    last_valid_states=list(recent_valid),
                 ) from None
             except SimulationDivergenceError as exc:
                 exc.last_valid_states = list(recent_valid)
