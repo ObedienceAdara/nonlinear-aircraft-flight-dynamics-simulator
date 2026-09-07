@@ -17,15 +17,15 @@ from .state import AircraftState, ControlInput
 class SimulationGuardConfig:
     """Configurable fail-fast simulation sanity checks.
 
-    Defaults are deliberately generous generic-simulation limits rather than
-    aircraft certification limits. Set ``enabled=False`` or individual bounds
-    to ``None`` for intentionally extreme test cases.
+    Defaults are deliberately broad generic numerical-sanity limits rather
+    than aircraft certification limits. Set ``enabled=False`` or individual
+    bounds to ``None`` for intentionally extreme test cases.
     """
 
     enabled: bool = True
     max_airspeed_m_s: float | None = 400.0
     max_angular_rate_rad_s: float | None = 12.0
-    max_abs_alpha_rad: float | None = float(np.deg2rad(89.5))
+    max_abs_alpha_rad: float | None = float(np.deg2rad(179.5))
     max_abs_beta_rad: float | None = float(np.deg2rad(89.5))
     history_size: int = 10
 
