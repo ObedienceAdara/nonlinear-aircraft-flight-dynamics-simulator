@@ -50,13 +50,13 @@ def test_quaternion_history_is_continuous_through_q0_zero():
 
 
 def test_physical_outputs_are_invariant_to_quaternion_sign_convention():
-    def canonicalize(q):
-        q = mathutils.normalize_quaternion(q)
-        return -q if q[0] < 0.0 else q
-
     original_mathutils = mathutils.normalize_quaternion
     original_integrators = integrators_module.normalize_quaternion
     original_equations = equations_module.normalize_quaternion
+
+    def canonicalize(q):
+        q = original_mathutils(q)
+        return -q if q[0] < 0.0 else q
 
     try:
         mathutils.normalize_quaternion = canonicalize
@@ -128,6 +128,5 @@ def test_physical_outputs_are_invariant_to_quaternion_sign_convention():
         old_values = np.asarray([row[field] for row in old_rows])
         np.testing.assert_allclose(new_values, old_values, rtol=0.0, atol=1e-12)
 
-    # The two simulations may differ only by q -> -q after crossing q0 = 0.
     quaternion_alignment = np.sum(current.state[:, 9:13] * baseline.state[:, 9:13], axis=1)
     assert np.all(np.isclose(np.abs(quaternion_alignment), 1.0, atol=1e-12))
