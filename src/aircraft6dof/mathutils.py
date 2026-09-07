@@ -4,8 +4,7 @@ import numpy as np
 def normalize_quaternion(q):
     q=np.asarray(q,dtype=float); n=np.linalg.norm(q)
     if n<=1e-15 or not np.isfinite(n): raise ValueError("invalid quaternion")
-    q=q/n
-    return -q if q[0]<0 else q
+    return q/n
 
 def quat_multiply(q1,q2):
     w1,x1,y1,z1=q1; w2,x2,y2,z2=q2
