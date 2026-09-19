@@ -74,6 +74,7 @@ class SimulationHistory:
     euler_rad: np.ndarray
     control_command_rad: np.ndarray
     actuator_deflection_rad: np.ndarray
+    actuator_deflection_for_state_rad: np.ndarray
 
 
 class Simulator:
@@ -147,9 +148,25 @@ class Simulator:
                     last_valid_states=[],
                 )
 
-    def run(self, initial, controls, environment, duration_s, dt_s, actuators: ActuatorSet | None = None,
-            guard: SimulationGuardConfig | None = None):
-        """Integrate with persistent actuators and fail-fast state/sanity guards."""
+    def run(
+        self,
+        initial,
+        controls,
+        environment,
+        duration_s,
+        dt_s,
+        actuators: ActuatorSet | None = None,
+        guard: SimulationGuardConfig | None = None,
+    ):
+        """Integrate with persistent actuators and fail-fast state/sanity guards.
+
+        ``actuator_deflection_rad[i]`` is the actual actuator position at the
+        start of simulation interval ``i``. ``actuator_deflection_for_state_rad[i]``
+        is the actuator position that was active during the RK4 step that
+        produced ``state[i]``. Keeping both histories avoids silently pairing a
+        state node with the actuator from the following interval during
+        reporting.
+        """
         guard = SimulationGuardConfig() if guard is None else guard
         n = int(round(duration_s / dt_s))
         t = np.linspace(0.0, n * dt_s, n + 1)
@@ -157,6 +174,7 @@ class Simulator:
         E = np.empty((n + 1, 3))
         C = np.empty((n + 1, 4))
         A = np.empty((n + 1, 3))
+        A_state = np.empty((n + 1, 3))
         s = initial
         recent_valid = deque(maxlen=guard.history_size)
 
@@ -179,13 +197,15 @@ class Simulator:
             initial_command.throttle,
         ])
         if actuators is None:
-            A[0] = C[0, :3]
+            initial_actual = C[0, :3].copy()
         else:
-            A[0] = np.array([
+            initial_actual = np.array([
                 actuators.aileron.position_rad,
                 actuators.elevator.position_rad,
                 actuators.rudder.position_rad,
             ])
+        A[0] = initial_actual
+        A_state[0] = initial_actual
 
         for i in range(n):
             ti = float(t[i])
@@ -205,6 +225,7 @@ class Simulator:
 
             C[i] = command_vec
             A[i] = actual_surfaces
+            A_state[i + 1] = actual_surfaces
             effective = ControlInput(
                 aileron=float(actual_surfaces[0]),
                 elevator=float(actual_surfaces[1]),
@@ -254,4 +275,4 @@ class Simulator:
                 actuators.rudder.position_rad,
             ])
 
-        return SimulationHistory(t, X, E, C, A)
+        return SimulationHistory(t, X, E, C, A, A_state)
