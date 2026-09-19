@@ -73,18 +73,20 @@ def test_reported_moment_uses_actuator_that_produced_state(monkeypatch):
         guard=SimulationGuardConfig(enabled=False),
     )
 
-    # X[1] was produced by the first RK4 evaluation, which used the actuator
-    # position recorded in actuator_deflection_for_state_rad[1]. At t=0.02 the
-    # next interval receives the step command and advances the actuator, so the
-    # node/interval history at index 1 is intentionally different.
+    # RK4 evaluates the same interval input four times. X[1] was produced by
+    # the first RK4 step, so its state-aligned actuator is call 0 (and calls
+    # 1–3, the remaining RK4 substages, carry the same control). At t=0.02
+    # the next interval receives the step command and advances the actuator.
+    first_step_control = aircraft.calls[0]
+    second_step_control = aircraft.calls[4]
     np.testing.assert_allclose(
         history.actuator_deflection_for_state_rad[1],
-        [aircraft.calls[0].aileron, aircraft.calls[0].elevator, aircraft.calls[0].rudder],
+        [first_step_control.aileron, first_step_control.elevator, first_step_control.rudder],
     )
     assert history.actuator_deflection_rad[1, 0] > history.actuator_deflection_for_state_rad[1, 0]
     np.testing.assert_allclose(
         history.actuator_deflection_for_state_rad[2],
-        [aircraft.calls[1].aileron, aircraft.calls[1].elevator, aircraft.calls[1].rudder],
+        [second_step_control.aileron, second_step_control.elevator, second_step_control.rudder],
     )
 
     def fake_aerodynamic_loads(rho, vrel_body, alpha, beta, p, q, r, geometry, controls_vec, coeffs):
@@ -103,9 +105,9 @@ def test_reported_moment_uses_actuator_that_produced_state(monkeypatch):
     monkeypatch.setattr(reporting, "aerodynamic_loads", fake_aerodynamic_loads)
     rows = reporting._series(history, controls, environment, aircraft)
 
-    expected_step_1_mx = 1000.0 * aircraft.calls[0].aileron
-    expected_step_2_mx = 1000.0 * aircraft.calls[1].aileron
+    expected_step_1_mx = 1000.0 * first_step_control.aileron
+    expected_step_2_mx = 1000.0 * second_step_control.aileron
     assert np.isclose(rows[1]["Mx_aero_Nm"], expected_step_1_mx)
     assert np.isclose(rows[2]["Mx_aero_Nm"], expected_step_2_mx)
-    assert np.isclose(rows[1]["aileron_for_state_rad"], aircraft.calls[0].aileron)
-    assert np.isclose(rows[2]["aileron_for_state_rad"], aircraft.calls[1].aileron)
+    assert np.isclose(rows[1]["aileron_for_state_rad"], first_step_control.aileron)
+    assert np.isclose(rows[2]["aileron_for_state_rad"], second_step_control.aileron)
