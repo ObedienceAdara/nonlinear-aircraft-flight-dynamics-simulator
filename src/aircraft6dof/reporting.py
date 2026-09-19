@@ -19,15 +19,20 @@ from .mathutils import dcm_body_to_ned_from_quat
 def _series(history, controls, environment, aircraft):
     """Reconstruct engineering quantities from the stored simulation history.
 
-    Surface deflections are taken from ``history.actuator_deflection_rad`` so
-    reporting cannot reintroduce the raw step-command discontinuities that the
-    dynamics now avoid. ``controls`` is retained in the public signature for
-    compatibility but is intentionally not consulted for surface deflections.
+    Surface deflections used to reconstruct aerodynamic loads are taken from
+    ``history.actuator_deflection_for_state_rad``. Index ``i`` therefore uses
+    the actuator position that was active during the RK4 interval that produced
+    ``state[i]``. The separate ``actuator_deflection_rad`` history remains the
+    node/interval actuator history used for control-input visualization.
+
+    ``controls`` is retained in the public signature for compatibility but is
+    intentionally not consulted for surface deflections.
     """
     del controls
     t, X = history.time_s, history.state
     command_history = history.control_command_rad
     actuator_history = history.actuator_deflection_rad
+    actuator_for_state = history.actuator_deflection_for_state_rad
     geom, aero, propulsion = aircraft.parameters.geometry, aircraft.parameters.aero, aircraft.parameters.propulsion
     rows = []
     for i, (ti, x) in enumerate(zip(t, X)):
@@ -35,7 +40,8 @@ def _series(history, controls, environment, aircraft):
         C = dcm_body_to_ned_from_quat(quat); vn = C @ vb
         env = environment(float(ti)) if callable(environment) else environment
         command_vec = command_history[i]
-        actual_surfaces = actuator_history[i]
+        actual_surfaces = actuator_for_state[i]
+        node_surfaces = actuator_history[i]
         wind, gust = np.asarray(env.wind_ned_m_s), np.asarray(env.gust_ned_m_s)
         vrel_n = vn - wind - gust; vrel_b = C.T @ vrel_n; V = float(np.linalg.norm(vrel_b))
         alpha = float(np.arctan2(vrel_b[2], vrel_b[0])) if V > 1e-9 else 0.0
@@ -64,7 +70,8 @@ def _series(history, controls, environment, aircraft):
             "Fx_aero_N": fb[0], "Fy_aero_N": fb[1], "Fz_aero_N": fb[2],
             "Mx_aero_Nm": mb[0], "My_aero_Nm": mb[1], "Mz_aero_Nm": mb[2], "thrust_N": fp[0], "thrust_moment_Nm": mp[1],
             "aileron_command_rad": command_vec[0], "elevator_command_rad": command_vec[1], "rudder_command_rad": command_vec[2],
-            "aileron_rad": actual_surfaces[0], "elevator_rad": actual_surfaces[1], "rudder_rad": actual_surfaces[2],
+            "aileron_rad": node_surfaces[0], "elevator_rad": node_surfaces[1], "rudder_rad": node_surfaces[2],
+            "aileron_for_state_rad": actual_surfaces[0], "elevator_for_state_rad": actual_surfaces[1], "rudder_for_state_rad": actual_surfaces[2],
             "throttle": command_vec[3],
             "wind_n_m_s": wind[0], "wind_e_m_s": wind[1], "wind_d_m_s": wind[2], "gust_n_m_s": gust[0], "gust_e_m_s": gust[1], "gust_d_m_s": gust[2],
             "temperature_K": atm.temperature_K, "pressure_Pa": atm.pressure_Pa, "density_kg_m3": atm.density_kg_m3, "speed_of_sound_m_s": atm.speed_of_sound_m_s,
