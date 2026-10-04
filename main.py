@@ -135,7 +135,7 @@ def environment(t: float) -> Environment:
         gust_ned_m_s=gust.value(t),
         density_kg_m3=atm.density_kg_m3,
         speed_of_sound_m_s=atm.speed_of_sound_m_s,
-        gravity_ned_m_s2=np.array([9.806, 0.0, 0.0]),
+        gravity_ned_m_s2=np.array([0.0, 0.0, 9.806]),
     )
 
 
