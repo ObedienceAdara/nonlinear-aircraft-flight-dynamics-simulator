@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "aircraft6dof"
 version = "0.1.0"
 description = "Configurable nonlinear 6-DOF aircraft flight dynamics simulator"
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = ["numpy>=1.26", "matplotlib>=3.8"]
 

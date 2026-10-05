@@ -62,6 +62,8 @@ def build_aircraft() -> AircraftModel:
         Cn_beta=0.18,
         Cn_p=-0.06,
         Cn_r=-0.20,
+        # Positive Cn_da is proverse yaw in this sign convention; the dedicated adverse-yaw
+        # study intentionally overrides this parameter so the opposite-sign phenomenon can be isolated.
         Cn_da=0.02,
         Cn_dr=-0.10,
     )
@@ -108,6 +110,8 @@ def build_actuators() -> ActuatorSet:
 def initial_state() -> AircraftState:
     return AircraftState(
         position_ned_m=np.array([0.0, 0.0, -1000.0]),
+        # Ground-relative body velocity. With the 5 m/s wind in environment() the
+        # initial airspeed is about 50 m/s, not 55.
         velocity_body_m_s=np.array([55.0, 0.0, 0.0]),
         omega_body_rad_s=np.zeros(3),
         quaternion_bn=np.array([1.0, 0.0, 0.0, 0.0]),

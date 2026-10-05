@@ -264,6 +264,22 @@ pytest
 
 No external flight-simulation engine is required by the canonical implementation.
 
+### Studies
+
+`studies/adverse_yaw/` runs the same roll command twice, once with ailerons
+only and once with a rudder tied to the aileron, and plots yaw rate, sideslip,
+bank angle and the yaw-moment terms. It also checks the simulation against its
+own linearized Dutch roll, roll and spiral modes. Run it from the repo root:
+
+```bash
+python studies/adverse_yaw/run_study.py
+```
+
+See `studies/adverse_yaw/README.md` for the setup, results and limitations.
+
+---
+
+
 ---
 
 ## Verification vs. validation
@@ -343,6 +359,8 @@ These limitations are intentionally explicit so future fidelity upgrades can be 
 ├── src/
 │   └── aircraft6dof/          # Canonical FDM implementation
 ├── tests/                     # Verification tests
+├── studies/
+│   └── adverse_yaw/           # Adverse yaw study: aileron-only vs rudder-coordinated roll
 ├── docs/
 │   ├── ARCHITECTURE.md        # Software and physical architecture
 │   ├── EQUATIONS.md           # Equations and sign/frame conventions
