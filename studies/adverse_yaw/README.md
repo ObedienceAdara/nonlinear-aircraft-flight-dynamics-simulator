@@ -37,6 +37,8 @@ input in both:
 - **Case B** -- rudder commanded as `-k * aileron`, `k` chosen by the sweep
   below (the sign makes it "right aileron -> right/into-turn rudder").
 
+The level-flight initialization now uses the shared `aircraft6dof.trim` solver rather than a study-specific Newton iteration, so the maneuver starts from the same trim machinery that the rest of the simulator can use.
+
 ## Where the yaw moment actually comes from
 
 `Cn = Cn_da*da + Cn_p*p_hat + Cn_beta*beta + Cn_r*r_hat + Cn_dr*dr`

@@ -1,5 +1,7 @@
 """Shared setup for the adverse yaw study: aircraft, trim, the roll maneuver, derived signals.
 
+Trim comes from aircraft6dof.trim.
+
 Builds on the repo's own aircraft6dof package. The only aero number changed from
 main.py is Cn_da (see README) -- everything else is the repo's aircraft as-is.
 """
@@ -18,7 +20,8 @@ for _p in (REPO, REPO / "src"):
         sys.path.insert(0, str(_p))
 
 import main as repo_main  # the repo's own aircraft + actuator numbers
-from aircraft6dof import AircraftModel, AircraftState, ControlInput, Environment, Simulator
+from aircraft6dof import AircraftModel, AircraftState, ControlInput, Environment, Simulator, TrimCondition
+from aircraft6dof.trim import trim as package_trim
 from aircraft6dof.atmosphere import standard_atmosphere
 from aircraft6dof.equations import AircraftParameters
 from aircraft6dof.mathutils import dcm_body_to_ned_from_quat, quat_from_euler321
@@ -61,27 +64,9 @@ class Trim:
 
 
 def trim_level_flight(aircraft: AircraftModel, env: Environment, V: float = V_TRIM_M_S) -> Trim:
-    """Newton solve for steady level flight: udot = wdot = qdot = 0 with theta = alpha."""
-    x = np.array([0.03, -0.01, 0.25])   # alpha, elevator, throttle
-
-    def resid(x):
-        a, de, th = x
-        s = AircraftState(np.array([0.0, 0.0, -ALT_M]), np.array([V * np.cos(a), 0.0, V * np.sin(a)]),
-                          np.zeros(3), quat_from_euler321(0.0, a, 0.0))
-        d = aircraft.derivative(s, ControlInput(0.0, de, 0.0, th), env)
-        return np.array([d.velocity_body_m_s[0], d.velocity_body_m_s[2], d.omega_body_rad_s[1]])
-
-    for _ in range(40):
-        r = resid(x)
-        if np.linalg.norm(r) < 1e-10:
-            return Trim(*map(float, x))
-        J = np.empty((3, 3))
-        for j in range(3):
-            dx = np.zeros(3)
-            dx[j] = 1e-6
-            J[:, j] = (resid(x + dx) - r) / 1e-6
-        x = x - np.linalg.solve(J, r)
-    raise RuntimeError("trim did not converge")
+    """Level-flight trim, from the package's trim solver (aircraft6dof.trim)."""
+    r = package_trim(aircraft, env, TrimCondition(airspeed_m_s=V, altitude_m=ALT_M))
+    return Trim(r.alpha_rad, r.controls.elevator, r.controls.throttle)
 
 
 def initial_state(trim: Trim, V: float = V_TRIM_M_S) -> AircraftState:

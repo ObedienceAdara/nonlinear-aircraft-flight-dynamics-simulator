@@ -94,6 +94,7 @@ The physical subsystems are intentionally separated so that individual models ca
 | `reporting.py` | Engineering data export and visualization |
 | `actuators.py` | Rate/position-limited actuator primitives |
 | `geodesy.py` | WGS-84 local geodetic utilities |
+| `trim.py` | Numerical steady-state trim solver |
 
 ---
 
@@ -264,6 +265,38 @@ pytest
 
 No external flight-simulation engine is required by the canonical implementation.
 
+
+### Trim
+
+The simulator now includes a reusable numerical trim solver built directly
+on the canonical nonlinear model:
+
+```python
+from aircraft6dof import TrimCondition
+from aircraft6dof.trim import trim
+
+result = trim(
+    aircraft,
+    environment,
+    TrimCondition(
+        airspeed_m_s=55.0,
+        altitude_m=1000.0,
+        flight_path_rad=0.0,
+    ),
+)
+
+print(result.summary())
+```
+
+The solver supports straight level flight, climb/descent, coordinated turns,
+steady sideslip and straight-flight trims in steady wind. It uses a finite-
+difference Jacobian and a damped Gauss-Newton step with backtracking, so the
+trim calculation stays on top of the same `aircraft.derivative()` used by
+the nonlinear simulator.
+
+See [`docs/TRIM_AND_LINEARIZATION.md`](docs/TRIM_AND_LINEARIZATION.md) for
+the conventions, solver details and current limitations.
+
 ### Studies
 
 `studies/adverse_yaw/` runs the same roll command twice, once with ailerons
@@ -340,7 +373,7 @@ The current canonical model is a nonlinear rigid-body FDM with representative ae
 - fuel burn and moving center of gravity;
 - landing-gear/ground-contact dynamics;
 - full actuator and sensor system simulation;
-- trim and linearization tooling;
+- linearization and stability-analysis tooling;
 - validated flight-control laws;
 - hardware-in-the-loop interfaces;
 - reinforcement-learning environment wrappers.
@@ -362,9 +395,10 @@ These limitations are intentionally explicit so future fidelity upgrades can be 
 ├── studies/
 │   └── adverse_yaw/           # Adverse yaw study: aileron-only vs rudder-coordinated roll
 ├── docs/
-│   ├── ARCHITECTURE.md        # Software and physical architecture
-│   ├── EQUATIONS.md           # Equations and sign/frame conventions
-│   └── VALIDATION.md          # Verification/validation roadmap
+│   ├── ARCHITECTURE.md           # Software and physical architecture
+│   ├── EQUATIONS.md              # Equations and sign/frame conventions
+│   ├── TRIM_AND_LINEARIZATION.md # Trim solver and later analysis notes
+│   └── VALIDATION.md             # Verification/validation roadmap
 └── outputs/                   # Generated local simulation results
 ```
 
@@ -401,7 +435,8 @@ Nonlinear rigid-body 6-DOF FDM
   │
   ├── Aircraft-specific aerodynamic databases
   ├── Propulsion performance maps
-  ├── Trim + linearization + stability analysis
+  ├── Trim solver
+  ├── Linearization + stability analysis
   ├── Full turbulence / environmental models
   ├── Higher-order actuator and sensor models
   ├── Flight-control laws

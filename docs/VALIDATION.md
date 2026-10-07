@@ -40,6 +40,11 @@ Once aircraft data are supplied:
 - turn performance and load factor;
 - stall/post-stall behavior where modeled.
 
+## Status
+
+- **Trim:** implemented in `src/aircraft6dof/trim.py` and covered by dedicated tests for level flight, climb/descent, coordinated turns, sideslip and steady wind.
+- **Independent comparison:** not yet part of this milestone.
+
 ## Level 5 — independent comparison
 
 Compare the simulator against:
