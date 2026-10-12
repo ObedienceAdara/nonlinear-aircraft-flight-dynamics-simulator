@@ -135,10 +135,21 @@ class OneMinusCosineGust:
 
 @dataclass
 class DrydenTurbulence:
-    """Reproducible correlated turbulence approximation.
+    """Three-axis Dryden-spectrum shaping filter.
 
-    This is intentionally documented as a Dryden-style stochastic process,
-    not as a certification-grade MIL-F-8785 implementation.
+    The longitudinal channel uses the first-order Dryden filter shape;
+    lateral and vertical channels use the second-order shape with a
+    sqrt(3) numerator zero. Exact discrete-time state transitions and their
+    integrated process-noise covariance are used for each fixed-airspeed step.
+    The configured sigma values define the stationary RMS of each output.
+
+    sigma_m_s and scale_length_m are ordered [longitudinal, lateral, vertical]
+    in the caller's turbulence axes. Rotate the returned vector into NED before
+    assigning it to Environment.gust_ned_m_s if those axes are not already NED.
+
+    This is a configurable Dryden spectral filter, not a complete MIL-F-8785C
+    implementation: it does not select severity/altitude parameters, model
+    angular turbulence, or claim certification-level conformance.
     """
 
     sigma_m_s: np.ndarray
@@ -150,22 +161,81 @@ class DrydenTurbulence:
         self.scale_length_m = np.asarray(self.scale_length_m, dtype=float)
         if self.sigma_m_s.shape != (3,) or self.scale_length_m.shape != (3,):
             raise ValueError("sigma and scale_length must be (3,)")
-        if np.any(self.sigma_m_s < 0.0) or np.any(self.scale_length_m <= 0.0):
-            raise ValueError("sigma must be non-negative and scale_length must be positive")
+        if not np.all(np.isfinite(self.sigma_m_s)) or np.any(self.sigma_m_s < 0.0):
+            raise ValueError("sigma must be finite and non-negative")
+        if not np.all(np.isfinite(self.scale_length_m)) or np.any(self.scale_length_m <= 0.0):
+            raise ValueError("scale_length must be finite and positive")
         self.state_m_s = np.zeros(3)
+        # For each transverse axis, store the two states of the repeated-pole
+        # realization: x1'=-a*x1+noise, x2'=x1-a*x2.
+        self._transverse_states = np.zeros((2, 2))
         self.rng = np.random.default_rng(self.seed)
 
+    @staticmethod
+    def _noise_integrals(rate: float, dt: float) -> tuple[float, float, float]:
+        """Integrals of exp(-2*a*t) * [1, t, t^2] over [0, dt].
+
+        A small-argument series avoids cancellation when a*dt is close to zero.
+        """
+        x = 2.0 * rate * dt
+        if x < 1e-3:
+            x2, x3, x4 = x*x, x*x*x, x*x*x*x
+            i0 = dt * (1.0 - x/2.0 + x2/6.0 - x3/24.0 + x4/120.0)
+            i1 = dt**2 * (0.5 - x/3.0 + x2/8.0 - x3/30.0 + x4/144.0)
+            i2 = dt**3 * (1.0/3.0 - x/4.0 + x2/10.0 - x3/36.0 + x4/168.0)
+            return i0, i1, i2
+
+        decay = np.exp(-x)
+        i0 = -np.expm1(-x) / (2.0 * rate)
+        i1 = (-np.expm1(-x) - x*decay) / (4.0 * rate**2)
+        i2 = (-np.expm1(-x) - decay*(x + 0.5*x*x)) / (4.0 * rate**3)
+        return i0, i1, i2
+
     def step(self, airspeed_m_s: float, dt: float) -> np.ndarray:
-        """Advance the correlated stochastic process by one time step."""
-        V = max(float(airspeed_m_s), 1.0)
+        """Advance all three Dryden channels by one time step.
+
+        Airspeed is held constant over this step. State transitions and
+        process-noise covariance are exact for that local condition, rather
+        than Euler-discretizing the filter differential equations.
+        """
+        V_raw = float(airspeed_m_s)
         dt = float(dt)
-        if dt <= 0.0:
-            raise ValueError("dt must be > 0")
-        tau = np.maximum(self.scale_length_m / V, 1e-3)
-        a = np.exp(-dt / tau)
-        self.state_m_s = (
-            a * self.state_m_s
-            + self.sigma_m_s * np.sqrt(np.maximum(0.0, 1.0 - a * a))
-            * self.rng.standard_normal(3)
-        )
+        if not np.isfinite(V_raw):
+            raise ValueError("airspeed_m_s must be finite")
+        if not np.isfinite(dt) or dt <= 0.0:
+            raise ValueError("dt must be finite and > 0")
+        V = max(V_raw, 1.0)
+        rates = V / self.scale_length_m
+        decay = np.exp(-rates * dt)
+
+        # First-order longitudinal channel; its stationary standard deviation
+        # equals sigma[0].
+        innovation_std = self.sigma_m_s[0] * np.sqrt(max(0.0, -np.expm1(-2.0*rates[0]*dt)))
+        self.state_m_s[0] = decay[0]*self.state_m_s[0] + innovation_std*self.rng.standard_normal()
+
+        # Second-order Dryden transfer-function shape for lateral and vertical
+        # turbulence. A two-state realization is discretized exactly for the
+        # current airspeed. Process-noise intensity pi and the output gain make
+        # the stationary output RMS equal to the configured sigma.
+        for axis in (1, 2):
+            rate = float(rates[axis])
+            i0, i1, i2 = self._noise_integrals(rate, dt)
+            q00, q01, q11 = np.pi*i0, np.pi*i1, np.pi*i2
+            l00 = np.sqrt(max(q00, 0.0))
+            l10 = q01/l00 if l00 > 0.0 else 0.0
+            l11 = np.sqrt(max(q11 - l10*l10, 0.0))
+            z0, z1 = self.rng.standard_normal(2)
+            noise0 = l00*z0
+            noise1 = l10*z0 + l11*z1
+
+            old0, old1 = self._transverse_states[axis-1]
+            new0 = decay[axis]*old0 + noise0
+            new1 = decay[axis]*(old1 + dt*old0) + noise1
+            self._transverse_states[axis-1] = (new0, new1)
+
+            # H(s) has a double pole at -rate and a zero at -rate/sqrt(3):
+            # y is proportional to (s + rate/sqrt(3))/(s + rate)^2.
+            shape_gain = self.sigma_m_s[axis]*np.sqrt(3.0*rate/np.pi)
+            self.state_m_s[axis] = shape_gain*(new0 + (rate/np.sqrt(3.0) - rate)*new1)
+
         return self.state_m_s.copy()
