@@ -8,6 +8,7 @@ The canonical FDM should be validated in layers.
 - Quaternion norm remains 1 after propagation.
 - Zero load/zero rate limiting cases.
 - Rigid-body rotational coupling signs.
+- Aerodynamic reference-point to CG moment translation (r x F).
 - Correct dimensions and finite values.
 
 ## Level 2 — environment
@@ -17,6 +18,8 @@ The canonical FDM should be validated in layers.
 - Gravity variation with latitude/altitude.
 - Gust boundary and peak behavior.
 - Reproducible stochastic turbulence with a fixed seed.
+- Reported atmospheric properties match the environment used by the dynamics.
+- Dryden output RMS and frequency-domain shapes match independent references within documented tolerances.
 
 ## Level 3 — aerodynamic primitives
 
@@ -42,8 +45,9 @@ Once aircraft data are supplied:
 
 ## Status
 
-- **Trim:** implemented in `src/aircraft6dof/trim.py` and covered by dedicated tests for level flight, climb/descent, coordinated turns, sideslip and steady wind.
-- **Independent comparison:** not yet part of this milestone.
+- **Trim:** implemented in `src/aircraft6dof/trim.py` and covered by dedicated tests for level flight, climb/descent, coordinated turns, sideslip and steady wind. The default `main.py` scenario starts from a trim and holds its baseline controls/actuator positions.
+- **Dryden turbulence:** spectral filter shapes and fixed-seed RMS behavior are implemented; full standard-severity parameterization and independent spectral comparison remain open validation tasks.
+- **Independent aircraft comparison:** not yet part of this milestone.
 
 ## Level 5 — independent comparison
 
