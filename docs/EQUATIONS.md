@@ -81,7 +81,13 @@ m = qbar S c Cm
 n = qbar S b Cn
 ```
 
-The wind-axis force vector is explicitly rotated into body axes.
+The wind-axis force vector is explicitly rotated into body axes. Aerodynamic coefficient moments are defined about the aerodynamic reference point and translated to the centre of gravity with the body-axis lever arm:
+
+```
+M_CG = M_ref + r_CG_to_ref x F_aero
+```
+
+cg_to_ref_m stores r_CG_to_ref, the vector from the centre of gravity to the aerodynamic moment reference point. The sign follows the rigid-body relation M = r x F.
 
 ## Navigation
 
@@ -95,10 +101,17 @@ The current canonical implementation assumes a local flat-Earth inertial/navigat
 
 ## Environment
 
-The atmosphere is based on the standard atmospheric layer equations through 20 km. The project should use the U.S. Standard Atmosphere 1976 as the reference when expanding the model. NASA/NOAA describe that model as covering temperature, pressure and density from sea level through the upper atmosphere and note agreement with ICAO below 32 km.
+The atmosphere utility is based on standard-atmosphere layer equations through 20 km. The default demo evaluates it at 1,000 m and holds the resulting density and speed of sound constant throughout the run. Reporting derives temperature and pressure from those same active environment values; it does not substitute standard-atmosphere values at the aircraft's instantaneous altitude. A future altitude-varying case must update the environment consistently with the propagated state at each integration stage.
 
 ## Turbulence
 
 A one-minus-cosine gust is used for deterministic testing.
 
-The stochastic turbulence process is a low-order correlated random process inspired by Dryden-style shaping. NASA's published work documents Dryden implementations and verification of turbulence implementations for nonlinear 6-DOF simulations; that documentation should be used when replacing the current simplified process with a certification-level spectral implementation.
+The stochastic filter uses the classical Dryden transfer-function shapes with tau_i = L_i / V:
+
+```
+H_u(s) proportional to 1 / (1 + tau_u s)
+H_v(s), H_w(s) proportional to (1 + sqrt(3) tau_i s) / (1 + tau_i s)^2
+```
+
+The longitudinal channel is first order; lateral and vertical channels have a double pole and a numerator zero. The code uses exact discrete-time state transitions and integrated process-noise covariance for constant airspeed over each step. Configured sigma_m_s values are the stationary RMS output levels. This is a spectral Dryden filter, but not a full MIL-F-8785C implementation: it does not select standard severity parameters by altitude/flight condition, include angular turbulence, or assert certification conformance. Compare generated power spectra and RMS values with independent reference implementations before making higher-fidelity claims. NASA CR-1998-206937 and the JSBSim reference implementation are useful comparison sources.
