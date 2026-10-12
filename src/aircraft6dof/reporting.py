@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .aero import aerodynamic_loads
-from .atmosphere import standard_atmosphere
+from .constants import GAMMA_AIR, R_AIR
 from .mathutils import dcm_body_to_ned_from_quat
 
 
@@ -59,7 +59,11 @@ def _series(history, controls, environment, aircraft):
             aero,
         )
         fp, mp = propulsion.force_and_moment(command_vec[3], V)
-        atm = standard_atmosphere(max(0.0, float(-pos[2])))
+        # Report the thermodynamic state implied by the same density and sound speed
+        # used by the dynamics. Do not substitute ISA values at current geometric
+        # altitude when the caller intentionally uses a fixed atmosphere.
+        temperature_K = env.speed_of_sound_m_s**2 / (GAMMA_AIR * R_AIR)
+        pressure_Pa = env.density_kg_m3 * R_AIR * temperature_K
         rows.append({
             "time_s": float(ti), "north_m": pos[0], "east_m": pos[1], "down_m": pos[2], "altitude_m": -pos[2],
             "u_m_s": vb[0], "v_m_s": vb[1], "w_m_s": vb[2], "vn_m_s": vn[0], "ve_m_s": vn[1], "vd_m_s": vn[2],
@@ -74,7 +78,7 @@ def _series(history, controls, environment, aircraft):
             "aileron_for_state_rad": actual_surfaces[0], "elevator_for_state_rad": actual_surfaces[1], "rudder_for_state_rad": actual_surfaces[2],
             "throttle": command_vec[3],
             "wind_n_m_s": wind[0], "wind_e_m_s": wind[1], "wind_d_m_s": wind[2], "gust_n_m_s": gust[0], "gust_e_m_s": gust[1], "gust_d_m_s": gust[2],
-            "temperature_K": atm.temperature_K, "pressure_Pa": atm.pressure_Pa, "density_kg_m3": atm.density_kg_m3, "speed_of_sound_m_s": atm.speed_of_sound_m_s,
+            "temperature_K": temperature_K, "pressure_Pa": pressure_Pa, "density_kg_m3": env.density_kg_m3, "speed_of_sound_m_s": env.speed_of_sound_m_s,
         })
     return rows
 
