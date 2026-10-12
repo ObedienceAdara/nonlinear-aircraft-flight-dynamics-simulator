@@ -86,7 +86,7 @@ The physical subsystems are intentionally separated so that individual models ca
 | `propulsion.py` | Thrust and thrust-induced moments |
 | `atmosphere.py` | Temperature, pressure, density and speed of sound |
 | `gravity.py` | Normal-gravity approximation |
-| `wind.py` | Deterministic gust and Dryden-style stochastic shaping |
+| `wind.py` | Deterministic gust and three-axis Dryden spectral shaping |
 | `mathutils.py` | Quaternion/DCM operations and attitude utilities |
 | `frames.py` | Body/NED transformations |
 | `integrators.py` | RK4 time integration |
@@ -116,6 +116,8 @@ Lateral/directional behavior is represented through $C_Y$, $C_l$, and $C_n$ deri
 
 The nondimensional coefficients are converted to dimensional loads using dynamic pressure $\bar q$, wing reference area $S$, mean aerodynamic chord $c$, and wing span $b$.
 
+Aerodynamic coefficient moments are interpreted about the aerodynamic reference point. VehicleGeometry.cg_to_ref_m is the body-axis vector from the centre of gravity to that point. Moments are shifted to the centre of gravity with $\mathbf M_{CG}=\mathbf M_{ref}+\mathbf r_{CG\rightarrow ref}\times\mathbf F_{aero}$.
+
 This makes the architecture suitable for progressively replacing the generic derivative set with data from CFD, DATCOM, wind-tunnel testing or flight-test identification.
 
 ---
@@ -128,7 +130,9 @@ The environment layer includes:
 - normal gravity;
 - steady NED wind;
 - finite-duration one-minus-cosine gusts;
-- a reproducible Dryden-style correlated stochastic turbulence process.
+- a reproducible three-axis Dryden spectral filter with configurable RMS intensities and length scales.
+
+The default main.py case deliberately holds the atmosphere fixed at the standard-atmosphere condition for 1,000 m, even while altitude changes. The CSV and plots report that same environment instead of displaying altitude-varying ISA values that were not used by the dynamics. The aircraft is initialized from the numerical trim solver at 55 m/s, and the baseline controls and actuator positions start at that trim. Scheduled elevator, aileron, rudder, and throttle commands are increments from the trim baseline.
 
 The project-level demonstration deliberately includes a scheduled gust so the disturbance can be traced through the chain:
 
@@ -146,7 +150,7 @@ forces / moments
 6-DOF aircraft response
 ```
 
-The stochastic implementation is explicitly described as **Dryden-style**, not as a certification-grade implementation of MIL-F-8785C. MIL-F-8785C remains a useful historical flying-qualities ref[...]
+The stochastic class implements the standard first-order longitudinal and second-order lateral/vertical Dryden spectral shapes, with discrete-time state transitions and process-noise covariance. It does not automatically select MIL-F-8785C severity/altitude parameters, model angular turbulence, or claim certification-grade conformance. MIL-F-8785C remains a useful historical flying-qualities ref[...]
 
 ---
 
