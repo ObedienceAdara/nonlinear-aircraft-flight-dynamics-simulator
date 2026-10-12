@@ -1,9 +1,12 @@
 # Canonical Simulator Architecture
 
-The repository now has two roles:
+The repository is organized around three active areas:
 
-1. **chapter-01..03/** — the historical, incremental implementations from the learning sequence.
-2. **src/aircraft6dof/** — the canonical simulator. New physics belongs here.
+1. **src/aircraft6dof/** — the canonical simulator implementation. New physics belongs here.
+2. **studies/** — reproducible engineering studies built on the canonical model.
+3. **tests/** — fast verification and regression tests for the physics, integration, reporting, and studies.
+
+main.py defines the default demonstration case. Generated CSV, JSON, plots, and animations are runtime outputs under outputs/; they are not separate simulator implementations.
 
 ## Physics pipeline
 
@@ -130,7 +133,7 @@ The core includes:
 - deterministic one-minus-cosine gust;
 - reproducible stochastic turbulence process.
 
-The stochastic turbulence class is deliberately labelled a **Dryden-style** shaping model. It should not be represented as a certification-grade MIL-F-8785C implementation without further validation against the governing spectral equations and verification data.
+The stochastic class implements first-order longitudinal and second-order lateral/vertical Dryden spectral shapes. It uses exact discrete-time state transitions and integrated process-noise covariance for each fixed-airspeed step, with configured sigma values representing stationary RMS intensities. It is not a complete MIL-F-8785C implementation: severity/altitude parameter selection, angular turbulence, and independent spectral conformance testing are outside the current scope.
 
 ## Fidelity boundary
 
