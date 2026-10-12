@@ -25,6 +25,7 @@ class VehicleGeometry:
     wing_area_m2: float
     wing_span_m: float
     mean_chord_m: float
+    # Body-axis vector from centre of gravity to aerodynamic moment reference point (m).
     cg_to_ref_m: np.ndarray=field(default_factory=lambda: np.zeros(3))
 
 @dataclass(frozen=True)
