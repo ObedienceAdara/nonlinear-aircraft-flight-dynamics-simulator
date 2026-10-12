@@ -17,6 +17,7 @@ from aircraft6dof import (
     Environment,
     SimulationDivergenceError,
     Simulator,
+    TrimCondition,
     VehicleGeometry,
 )
 from aircraft6dof.actuators import ActuatorChannel, ActuatorSet
@@ -26,8 +27,10 @@ from aircraft6dof.equations import AircraftParameters
 from aircraft6dof.propulsion import Propulsion
 from aircraft6dof.reporting import export_simulation
 from aircraft6dof.wind import OneMinusCosineGust
+from aircraft6dof.trim import trim
 
 OUTPUT_DIR = ROOT / "outputs"
+REFERENCE_ALTITUDE_M = 1000.0
 
 
 def build_aircraft() -> AircraftModel:
@@ -75,60 +78,74 @@ def build_aircraft() -> AircraftModel:
     return AircraftModel(AircraftParameters(geometry=geometry, aero=aero, propulsion=propulsion))
 
 
-def build_actuators() -> ActuatorSet:
-    """Build the maneuver-case surface actuator model.
+def build_actuators(initial_controls: ControlInput | None = None) -> ActuatorSet:
+    """Build provisional actuator channels initialized at the baseline trim.
 
-    No aircraft-specific actuator time constants, rate limits, or position
-    limits were defined anywhere in the repository before this fix. The values
-    below are explicit *provisional simulation-case assumptions*, not identified
-    hardware data. Replace them with actuator/vendor/flight-test data when a
-    specific aircraft model is introduced.
-
-    The selected limits are intentionally well above the maneuver's requested
-    surface steps, so the response is dominated by the actuator time constant
-    rather than an artificial slew-rate cap.
+    Time constants and limits are demonstration assumptions, not identified
+    hardware data. Supply initial_controls so surfaces begin at trim deflections
+    instead of introducing a startup actuator transient.
     """
+    baseline = ControlInput() if initial_controls is None else initial_controls
     return ActuatorSet(
         aileron=ActuatorChannel(
             time_constant_s=0.15,
             rate_limit_rad_s=np.deg2rad(80.0),
             position_limit_rad=np.deg2rad(25.0),
+            position_rad=baseline.aileron,
         ),
         elevator=ActuatorChannel(
             time_constant_s=0.20,
             rate_limit_rad_s=np.deg2rad(50.0),
             position_limit_rad=np.deg2rad(25.0),
+            position_rad=baseline.elevator,
         ),
         rudder=ActuatorChannel(
             time_constant_s=0.20,
             rate_limit_rad_s=np.deg2rad(40.0),
             position_limit_rad=np.deg2rad(30.0),
+            position_rad=baseline.rudder,
         ),
     )
 
 
-def initial_state() -> AircraftState:
-    return AircraftState(
-        position_ned_m=np.array([0.0, 0.0, -1000.0]),
-        # Ground-relative body velocity. With the 5 m/s wind in environment() the
-        # initial airspeed is about 50 m/s, not 55.
-        velocity_body_m_s=np.array([55.0, 0.0, 0.0]),
-        omega_body_rad_s=np.zeros(3),
-        quaternion_bn=np.array([1.0, 0.0, 0.0, 0.0]),
+def trim_initial_condition(aircraft: AircraftModel, env: Environment):
+    """Solve the default straight, level 55 m/s trim at the reference altitude."""
+    return trim(
+        aircraft,
+        env,
+        TrimCondition(airspeed_m_s=55.0, altitude_m=REFERENCE_ALTITUDE_M),
     )
 
 
-def controls(t: float) -> ControlInput:
+def initial_state(
+    aircraft: AircraftModel | None = None,
+    env: Environment | None = None,
+) -> AircraftState:
+    """Return a trim-consistent initial state for the default demo condition."""
+    model = build_aircraft() if aircraft is None else aircraft
+    initial_environment = environment(0.0) if env is None else env
+    return trim_initial_condition(model, initial_environment).state
+
+
+def controls(t: float, baseline: ControlInput | None = None) -> ControlInput:
+    """Scheduled control increments about a baseline (trim for the main run).
+
+    With no baseline, retain the original demonstration schedule for callers
+    that use this function independently.
+    """
+    base = ControlInput(throttle=0.72) if baseline is None else baseline
     return ControlInput(
-        aileron=np.deg2rad(3.0 if 18.0 <= t < 26.0 else 0.0),
-        elevator=np.deg2rad(-1.5 if 8.0 <= t < 16.0 else 0.0),
-        rudder=np.deg2rad(1.0 if 18.0 <= t < 26.0 else 0.0),
-        throttle=0.72 if t < 12.0 else 0.82,
+        aileron=base.aileron + np.deg2rad(3.0 if 18.0 <= t < 26.0 else 0.0),
+        elevator=base.elevator + np.deg2rad(-1.5 if 8.0 <= t < 16.0 else 0.0),
+        rudder=base.rudder + np.deg2rad(1.0 if 18.0 <= t < 26.0 else 0.0),
+        throttle=min(1.0, base.throttle + (0.10 if t >= 12.0 else 0.0)),
     )
 
 
 def environment(t: float) -> Environment:
-    atm = standard_atmosphere(1000.0)
+    # The demo deliberately holds the 1,000 m reference atmosphere constant.
+    # This is a fixed-environment experiment, not an altitude-varying ISA model.
+    atm = standard_atmosphere(REFERENCE_ALTITUDE_M)
     gust = OneMinusCosineGust(
         amplitude_m_s=np.array([0.0, 4.0, 2.0]),
         start_s=10.0,
@@ -146,11 +163,14 @@ def environment(t: float) -> Environment:
 def main() -> int:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     aircraft = build_aircraft()
-    actuators = build_actuators()
+    env0 = environment(0.0)
+    initial_condition = trim_initial_condition(aircraft, env0)
+    control_schedule = lambda t: controls(t, initial_condition.controls)
+    actuators = build_actuators(initial_condition.controls)
     try:
         history = Simulator(aircraft).run(
-            initial_state(),
-            controls,
+            initial_condition.state,
+            control_schedule,
             environment,
             duration_s=40.0,
             dt_s=0.02,
@@ -159,7 +179,7 @@ def main() -> int:
         export_simulation(
             history,
             OUTPUT_DIR,
-            controls=controls,
+            controls=control_schedule,
             environment=environment,
             aircraft=aircraft,
         )
@@ -170,9 +190,11 @@ def main() -> int:
     print("Aircraft 6-DOF simulation complete.")
     print(f"Output directory: {OUTPUT_DIR}")
     print(f"Samples: {len(history.time_s)}")
+    print(f"Initial condition: numerical trim at {initial_condition.condition.airspeed_m_s:.1f} m/s, "
+          f"{initial_condition.condition.altitude_m:.0f} m.")
+    print("Atmosphere: fixed 1,000 m reference conditions throughout the demonstration.")
     print("Generated simulation.csv, simulation_summary.json, and engineering plots.")
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
