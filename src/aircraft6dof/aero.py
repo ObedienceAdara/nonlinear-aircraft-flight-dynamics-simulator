@@ -31,5 +31,8 @@ def aerodynamic_loads(rho,vrel_body,alpha,beta,p,q,r,geometry,controls,coeffs):
     sa,ca=np.sin(alpha),np.cos(alpha); sb,cb=np.sin(beta),np.cos(beta)
     c_bw=np.array([[ca*cb,-ca*sb,-sa],[sb,cb,0],[sa*cb,-sa*sb,ca]])
     fb=c_bw@fw
-    mb=qb*S*np.array([geometry.wing_span_m*c["Cl"],geometry.mean_chord_m*c["Cm"],geometry.wing_span_m*c["Cn"]])
+    # Coefficient moments are about the aerodynamic reference point. cg_to_ref_m is
+    # r_CG_to_ref in body axes, so M_CG = M_ref + r_CG_to_ref x F_aero.
+    mb_ref=qb*S*np.array([geometry.wing_span_m*c["Cl"],geometry.mean_chord_m*c["Cm"],geometry.wing_span_m*c["Cn"]])
+    mb=mb_ref+np.cross(np.asarray(geometry.cg_to_ref_m,dtype=float),fb)
     return fb,mb,c
