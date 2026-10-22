@@ -95,6 +95,8 @@ The physical subsystems are intentionally separated so that individual models ca
 | `actuators.py` | Rate/position-limited actuator primitives |
 | `geodesy.py` | WGS-84 local geodetic utilities |
 | `trim.py` | Numerical steady-state trim solver |
+| `linearize.py` | Central-difference local A/B matrices and linear response |
+| `modes.py` | Longitudinal and lateral-directional mode classification |
 
 ---
 
@@ -109,7 +111,7 @@ C_L=C_{L0}+C_{L_{\alpha}}\alpha+C_{L_{\delta_e}}\delta_e+C_{L_q}\frac{qc}{2V}
 $$
 
 $$
-C_D=C_{D0}+C_{D_{\alpha^2}}\alpha^2+C_{D_{\delta_e^2}}\delta_e^2.
+C_D=C_{D0}+C_{D_{\alpha}}\alpha+C_{D_{\alpha^2}}\alpha^2+C_{D_{\delta_e^2}}\delta_e^2.
 $$
 
 Lateral/directional behavior is represented through $C_Y$, $C_l$, and $C_n$ derivatives with respect to sideslip, angular rates, and control surfaces.
@@ -301,6 +303,40 @@ the nonlinear simulator.
 See [`docs/TRIM_AND_LINEARIZATION.md`](docs/TRIM_AND_LINEARIZATION.md) for
 the conventions, solver details and current limitations.
 
+### Linearization and flight-dynamics modes
+
+The local linear model is built from the same nonlinear `aircraft.derivative()`
+used by the simulator. It converts the quaternion operating point to a 12-state
+Euler representation, then uses central finite differences to form the state
+Jacobian \(A=\partial f/\partial x\) and control Jacobian \(B=\partial f/\partial u\).
+`linearize_trim()` builds these matrices directly from a `TrimResult`.
+
+```python
+from aircraft6dof import TrimCondition, linearize_trim
+from aircraft6dof.trim import trim
+from aircraft6dof.modes import all_modes
+
+operating_point = trim(aircraft, environment,
+                       TrimCondition(airspeed_m_s=55.0, altitude_m=1000.0))
+linear_model = linearize_trim(aircraft, environment, operating_point)
+for name, mode in all_modes(linear_model).items():
+    print(name, mode.describe())
+```
+
+The linear model exposes the full \(12\times12\) matrix `A`, the \(12\times4\)
+matrix `B`, longitudinal and lateral subsystem slices, and an RK4 linear-response
+simulator. Mode classification identifies short period, phugoid, Dutch roll,
+roll subsidence and spiral roots when their eigenvalue patterns match those
+standard modes. Euler-angle linearization is singular near pitch \(\pm90^\circ\);
+the quaternion formulation remains the nonlinear simulation representation.
+
+For the generic aircraft at 55 m/s and 1,000 m in still air, the current model
+gives a Dutch-roll root near \(-0.893\pm3.634j\;\mathrm{s}^{-1}\), damping ratio
+0.2385 and period 1.729 s. These are results for this generic parameter set,
+not validation data for a real aircraft.
+
+See [`docs/TRIM_AND_LINEARIZATION.md`](docs/TRIM_AND_LINEARIZATION.md) for details.
+
 ### Studies
 
 `studies/adverse_yaw/` runs the same roll command twice, once with ailerons
@@ -377,7 +413,6 @@ The current canonical model is a nonlinear rigid-body FDM with representative ae
 - fuel burn and moving center of gravity;
 - landing-gear/ground-contact dynamics;
 - full actuator and sensor system simulation;
-- linearization and stability-analysis tooling;
 - validated flight-control laws;
 - hardware-in-the-loop interfaces;
 - reinforcement-learning environment wrappers.
@@ -440,7 +475,7 @@ Nonlinear rigid-body 6-DOF FDM
   ├── Aircraft-specific aerodynamic databases
   ├── Propulsion performance maps
   ├── Trim solver
-  ├── Linearization + stability analysis
+  ├── Higher-fidelity aircraft data and independent validation
   ├── Full turbulence / environmental models
   ├── Higher-order actuator and sensor models
   ├── Flight-control laws

@@ -75,21 +75,24 @@ into the roll you asked for, too.
 
 ## Is the simulation consistent with its own linearization?
 
-`modes.py` builds a central-difference Jacobian of the repo's own
-`aircraft.derivative()` for the standard decoupled lateral-directional model
-(v, p, r, phi; u, w, q and the trim attitude held fixed) and takes its
-eigenvalues. For this aircraft at trim:
+`modes.py` now delegates to the package's shared `trim()`, `linearize_trim()`
+and `lateral_modes()` implementations. This removes the study's duplicate
+finite-difference Jacobian and keeps the mode calculation on the same nonlinear
+derivative used by the simulator.
+
+For the study aircraft at 55 m/s and 1,000 m in still air, the current model gives:
 
 | Mode | Root | Meaning |
 |---|---|---|
-| Dutch roll | -0.90 +/- 3.74j 1/s | damping ratio 0.234, period 1.68 s |
-| Roll subsidence | -8.12 1/s | time constant 0.12 s |
-| Spiral | +0.020 1/s | slightly unstable, time constant ~49 s |
+| Dutch roll | -0.8926 +/- 3.6345j 1/s | damping ratio 0.2385, period 1.729 s |
+| Roll subsidence | -8.1276 1/s | time constant 0.123 s |
+| Spiral | +0.01685 1/s | weakly unstable, time to double about 41.1 s |
 
-The nonlinear simulation's yaw rate after the pulse rings with a first
-peak-to-peak interval of 1.69 s -- matching the predicted 1.68 s (plot `07`).
-The later peaks drift from the straight dashed lines because the aircraft is
-banked ~40 deg by then, which the wings-level linearization does not know about.
+**Stored-output note:** the figures and `outputs/summary.json` were generated before
+the current CG-to-aerodynamic-reference moment translation was incorporated into
+this study snapshot. Regenerate the study before interpreting its time histories,
+rudder-gain sweep or animation as results for the current equations. The mode
+values above are calculated from the current canonical implementation.
 
 ## How this differs from `main.py`'s environment
 
@@ -105,7 +108,7 @@ density at 1000 m and gravity [0, 0, g] (down, NED). Gravity direction in
 | `study_setup.py` | Aircraft/trim/maneuver setup, running a case, and the derived signals (alpha, beta, course, lateral g, per-term Cn/Cl breakdown) |
 | `make_plots.py` | The seven static plots |
 | `animate.py` | Side-by-side 3D comparison animation with a live yaw-rate/sideslip strip chart |
-| `modes.py` | Lateral-directional eigenvalues from a finite-difference Jacobian |
+| `modes.py` | Thin wrapper over the canonical linearization and mode classifier |
 | `run_study.py` | Runs everything and writes `outputs/` |
 
 ## Known limitation, stated plainly

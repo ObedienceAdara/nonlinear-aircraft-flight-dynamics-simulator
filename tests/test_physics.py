@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from aircraft6dof.aero import AeroCoefficients, aerodynamic_loads
 from aircraft6dof.equations import AircraftParameters,state_derivative
 from aircraft6dof.mathutils import quat_from_euler321,dcm_body_to_ned_from_quat
@@ -64,3 +65,49 @@ def test_aerodynamic_reference_moment_is_translated_to_cg():
         rtol=1e-12,
         atol=1e-10,
     )
+
+
+def test_optional_aero_terms_default_to_zero_and_act_when_set():
+    from aircraft6dof.aero import coefficient_buildup
+
+    args = (0.05, 0.02, 0.1, 0.05, -0.04, 50.0, 10.0, 1.5, (0.01, -0.02, 0.03))
+    base = coefficient_buildup(*args, AeroCoefficients())
+    same = coefficient_buildup(*args, AeroCoefficients(CD_alpha=0.0, CY_p=0.0, CY_r=0.0))
+    assert base == same
+    extra = coefficient_buildup(*args, AeroCoefficients(CD_alpha=0.1, CY_p=0.2, CY_r=0.3))
+    ph, rh = 0.1 * 10.0 / 100.0, -0.04 * 10.0 / 100.0
+    assert extra["CD"] - base["CD"] == pytest.approx(0.1 * 0.05)
+    assert extra["CY"] - base["CY"] == pytest.approx(0.2 * ph + 0.3 * rh)
+
+
+def test_rigid_body_derivative_independently_applies_force_moment_and_gravity():
+    from aircraft6dof.equations import rigid_body_derivative
+    from aircraft6dof.mathutils import normalize_quaternion, quat_multiply
+
+    geometry = params().geometry
+    state = AircraftState(
+        position_ned_m=np.array([12.0, -4.0, -1000.0]),
+        velocity_body_m_s=np.array([48.0, 2.0, 5.0]),
+        omega_body_rad_s=np.array([0.12, -0.04, 0.08]),
+        quaternion_bn=quat_from_euler321(0.1, 0.06, -0.2),
+    )
+    force = np.array([150.0, -40.0, -900.0])
+    moment = np.array([25.0, -60.0, 12.0])
+    gravity_ned = np.array([0.0, 0.0, 9.80665])
+    derivative = rigid_body_derivative(state, force, moment, gravity_ned, geometry)
+
+    q = normalize_quaternion(state.quaternion_bn)
+    C_bn = dcm_body_to_ned_from_quat(q)
+    expected_vdot = (force + C_bn.T @ gravity_ned * geometry.mass_kg) / geometry.mass_kg - np.cross(
+        state.omega_body_rad_s, state.velocity_body_m_s
+    )
+    inertia = geometry.inertia_kg_m2
+    expected_omega_dot = np.linalg.solve(
+        inertia, moment - np.cross(state.omega_body_rad_s, inertia @ state.omega_body_rad_s)
+    )
+    expected_qdot = 0.5 * quat_multiply(q, np.array([0.0, *state.omega_body_rad_s]))
+
+    np.testing.assert_allclose(derivative.position_ned_m, C_bn @ state.velocity_body_m_s, atol=1e-12)
+    np.testing.assert_allclose(derivative.velocity_body_m_s, expected_vdot, atol=1e-12)
+    np.testing.assert_allclose(derivative.omega_body_rad_s, expected_omega_dot, atol=1e-12)
+    np.testing.assert_allclose(derivative.quaternion_bn, expected_qdot, atol=1e-12)

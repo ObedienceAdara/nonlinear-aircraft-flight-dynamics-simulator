@@ -47,6 +47,7 @@ Once aircraft data are supplied:
 
 - **Trim:** implemented in `src/aircraft6dof/trim.py` and covered by dedicated tests for level flight, climb/descent, coordinated turns, sideslip and steady wind. The default `main.py` scenario starts from a trim and holds its baseline controls/actuator positions.
 - **Dryden turbulence:** spectral filter shapes and fixed-seed RMS behavior are implemented; full standard-severity parameterization and independent spectral comparison remain open validation tasks.
+- **Linearization and modes:** central-difference A/B construction, Jacobian step-size sensitivity, trim equilibrium, subsystem structure, mode plausibility, and small-perturbation comparison are tested. These checks verify software behavior; they do not validate generic coefficients against an actual aircraft.
 - **Independent aircraft comparison:** not yet part of this milestone.
 
 ## Level 5 — independent comparison

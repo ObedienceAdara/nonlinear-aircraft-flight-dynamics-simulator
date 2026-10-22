@@ -10,14 +10,16 @@ class AeroCoefficients:
     Cl_beta:float=-.12; Cl_p:float=-.50; Cl_r:float=.20; Cl_da:float=.20; Cl_dr:float=.05
     Cm0:float=.04; Cm_alpha:float=-1.10; Cm_q:float=-12.; Cm_de:float=-1.10
     Cn_beta:float=.25; Cn_p:float=-.05; Cn_r:float=-.25; Cn_da:float=.03; Cn_dr:float=-.10
+    # Optional derivatives default to zero until aircraft-specific values are evidenced.
+    CD_alpha:float=0.; CY_p:float=0.; CY_r:float=0.
 
 def coefficient_buildup(alpha,beta,p,q,r,V,span,chord,controls,c):
     da,de,dr=controls; V=max(float(V),1.)
     ph=p*span/(2*V); qh=q*chord/(2*V); rh=r*span/(2*V)
     return {
       "CL":c.CL0+c.CL_alpha*alpha+c.CL_de*de+c.CL_q*qh,
-      "CD":c.CD0+c.CD_alpha2*alpha**2+c.CD_de2*de**2,
-      "CY":c.CY_beta*beta+c.CY_da*da+c.CY_dr*dr,
+      "CD":c.CD0+c.CD_alpha*alpha+c.CD_alpha2*alpha**2+c.CD_de2*de**2,
+      "CY":c.CY_beta*beta+c.CY_da*da+c.CY_dr*dr+c.CY_p*ph+c.CY_r*rh,
       "Cl":c.Cl_beta*beta+c.Cl_p*ph+c.Cl_r*rh+c.Cl_da*da+c.Cl_dr*dr,
       "Cm":c.Cm0+c.Cm_alpha*alpha+c.Cm_q*qh+c.Cm_de*de,
       "Cn":c.Cn_beta*beta+c.Cn_p*ph+c.Cn_r*rh+c.Cn_da*da+c.Cn_dr*dr}

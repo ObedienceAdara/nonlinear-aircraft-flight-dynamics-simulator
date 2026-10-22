@@ -55,8 +55,8 @@ The default model uses examples of the standard stability-derivative structure:
 
 ```
 CL = CL0 + CL_alpha alpha + CL_de de + CL_q q_hat
-CD = CD0 + CD_alpha2 alpha^2 + CD_de2 de^2
-CY = CY_beta beta + CY_da da + CY_dr dr
+CD = CD0 + CD_alpha alpha + CD_alpha2 alpha^2 + CD_de2 de^2
+CY = CY_beta beta + CY_da da + CY_dr dr + CY_p p_hat + CY_r r_hat
 ```
 
 and analogous roll, pitch and yaw moment derivatives.
@@ -88,6 +88,23 @@ M_CG = M_ref + r_CG_to_ref x F_aero
 ```
 
 cg_to_ref_m stores r_CG_to_ref, the vector from the centre of gravity to the aerodynamic moment reference point. The sign follows the rigid-body relation M = r x F.
+
+## Local linearization
+
+The nonlinear model propagates attitude with a quaternion. Local flight-dynamics
+linearization uses the Euler state vector
+
+```
+x = [N, E, D, u, v, w, p, q, r, phi, theta, psi]
+u = [aileron, elevator, rudder, throttle]
+```
+
+At an operating point \((x_0,u_0)\), central differences approximate
+\(A=\partial f/\partial x\) and \(B=\partial f/\partial u\). The evaluator
+calls the same nonlinear `aircraft.derivative()`; the linear model therefore
+inherits the current force, moment, gravity and rigid-body conventions. This
+Euler representation is singular at pitch \(\pm90^\circ\) and is intended for
+local analysis away from that attitude.
 
 ## Navigation
 

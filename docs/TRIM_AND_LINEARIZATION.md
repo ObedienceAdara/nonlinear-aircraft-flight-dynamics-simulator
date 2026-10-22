@@ -44,8 +44,54 @@ body-frame ground velocity rotates, so the body accelerations cannot all be zero
 iterate in `.result`. A converged trim with throttle outside [0, 1] is returned with a warning in `result.warnings`,
 because the propulsion model clips throttle and that trim could not be flown.
 
+## Linearization
+
+The nonlinear simulator represents attitude with a quaternion. For local analysis,
+`linearize.py` uses the Euler state
+
+```
+[N, E, D, u, v, w, p, q, r, phi, theta, psi]
+```
+
+and the control vector `[aileron, elevator, rudder, throttle]`. It evaluates the
+canonical `aircraft.derivative()` through an Euler-rate wrapper, then computes
+`A = df/dx` and `B = df/du` using central finite differences. The default step
+is `1e-6`, scaled by the magnitude of the component being perturbed. The resulting
+`LinearModel` stores the operating point and nonlinear `xdot0`, exposes the
+longitudinal and lateral subsystem matrices, and integrates perturbation responses
+using RK4 with a zero-order-held input.
+
+```python
+from aircraft6dof import TrimCondition, linearize_trim
+from aircraft6dof.trim import trim
+
+tr = trim(aircraft, env, TrimCondition(55.0, altitude_m=1000.0))
+model = linearize_trim(aircraft, env, tr)
+print(model.A.shape, model.B.shape)  # (12, 12), (12, 4)
+```
+
+Linearization uses Euler angles, so it is a local model and is singular near
+pitch \(\pm90^\circ\). It does not replace the quaternion nonlinear model.
+
+## Flight-dynamics modes
+
+`modes.py` classifies the eigenvalues of the longitudinal
+\((u,w,q,\theta)\) and lateral-directional \((v,p,r,\phi)\) submodels.
+
+| Mode | Representative root at 55 m/s, 1,000 m, still air | Interpretation |
+|---|---|---|
+| Short period | \(-2.104\pm2.865j\;\mathrm{s}^{-1}\) | Fast longitudinal oscillation; \(\zeta\approx0.592\) |
+| Phugoid | \(-0.01213\pm0.20643j\;\mathrm{s}^{-1}\) | Slow speed/flight-path exchange; \(\zeta\approx0.0587\) |
+| Dutch roll | \(-0.8926\pm3.6345j\;\mathrm{s}^{-1}\) | Lateral-directional oscillation; \(\zeta\approx0.2385\), period 1.729 s |
+| Roll subsidence | \(-8.128\;\mathrm{s}^{-1}\) | Stable real mode; time constant 0.123 s |
+| Spiral | \(+0.01685\;\mathrm{s}^{-1}\) | Weakly unstable real mode; time to double about 41.1 s |
+
+These roots are numerical diagnostics for the current generic coefficients and operating
+point. They are not validation against a real aircraft.
+
 ## Current milestone
 
-This document records the trim interface and numerical conventions for the
-current repository milestone. Linearization and modal analysis will build on
-the same trim result in the next milestone.
+The repository now supports nonlinear 6-DOF simulation, trim, local A/B
+linearization, flight-dynamics mode classification and linear-versus-nonlinear
+small-response comparisons. The independent JSBSim comparison layer is not part
+of this commit and remains a separate future milestone.

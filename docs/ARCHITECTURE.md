@@ -135,6 +135,33 @@ The core includes:
 
 The stochastic class implements first-order longitudinal and second-order lateral/vertical Dryden spectral shapes. It uses exact discrete-time state transitions and integrated process-noise covariance for each fixed-airspeed step, with configured sigma values representing stationary RMS intensities. It is not a complete MIL-F-8785C implementation: severity/altitude parameter selection, angular turbulence, and independent spectral conformance testing are outside the current scope.
 
+## Operating points, local linearization and modes
+
+The canonical path from nonlinear simulation to local flight-dynamics analysis is:
+
+```mermaid
+flowchart TD
+    N[Nonlinear 6-DOF model] --> T[Trim condition]
+    T --> X[12-state Euler operating point]
+    X --> J[Central-difference Jacobian]
+    J --> AB[A and B matrices]
+    AB --> L[Linear perturbation model]
+    L --> M[Mode classification]
+    L --> C[Linear/nonlinear response comparison]
+```
+
+`equations.py` separates the rigid-body equations into `rigid_body_derivative()`.
+`state_derivative()` remains the canonical assembly point for aerodynamics,
+propulsion, relative air velocity and gravity, then delegates propagation to
+that function. This makes translational, rotational and quaternion equations
+directly testable without duplicating force/moment assembly.
+
+`linearize.py` evaluates the existing nonlinear derivative through a 12-state
+Euler wrapper and builds local state and control Jacobians. `modes.py` classifies
+eigenvalues of the longitudinal and lateral-directional subsystem matrices.
+These modes describe local behavior near the selected operating point; they do
+not establish that generic parameters match a physical aircraft.
+
 ## Fidelity boundary
 
 This is a real nonlinear 6-DOF **flight-dynamics framework**, not a flight-certified or aircraft-validated model.

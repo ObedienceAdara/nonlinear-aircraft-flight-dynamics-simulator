@@ -1,6 +1,7 @@
 from .aircraft import AircraftModel
 from .state import AircraftState, ControlInput, Environment, VehicleGeometry
 from .trim import TrimCondition, TrimError, TrimResult
+from .linearize import LinearModel, linearize_trim
 from .simulation import Simulator, SimulationDivergenceError, SimulationGuardConfig
 
 __all__ = [
@@ -15,4 +16,6 @@ __all__ = [
     "TrimCondition",
     "TrimError",
     "TrimResult",
+    "LinearModel",
+    "linearize_trim",
 ]
