@@ -337,6 +337,20 @@ not validation data for a real aircraft.
 
 See [`docs/TRIM_AND_LINEARIZATION.md`](docs/TRIM_AND_LINEARIZATION.md) for details.
 
+### External comparison with JSBSim
+
+The optional comparison harness in `comparison/jsbsim/` compares this repository with JSBSim's Cessna 172 at a documented local operating point. It covers (1) rigid-body equations of motion with identical JSBSim-applied loads, (2) trim and locally linearized modes, and (3) time responses to small elevator, aileron and rudder inputs.
+
+Install the optional dependency and run the experiment:
+
+```bash
+python -m pip install -e ".[dev,compare]"
+pytest
+python comparison/jsbsim/run_comparison.py
+```
+
+The run writes a Markdown report, a machine-readable summary and four engineering plots. The derived JSBSim aircraft XML is built at run time and ignored by Git to avoid redistributing source aircraft data. The repository's compact aerodynamic model is fitted locally to JSBSim coefficients, so this is a code-to-code comparison—not independent aerodynamic or real-aircraft validation. See the [comparison guide](comparison/jsbsim/README.md) and [validation plan](docs/VALIDATION.md) for assumptions and limits.
+
 ### Studies
 
 `studies/adverse_yaw/` runs the same roll command twice, once with ailerons

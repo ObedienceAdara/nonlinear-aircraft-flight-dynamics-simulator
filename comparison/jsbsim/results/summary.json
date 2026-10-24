@@ -1,0 +1,371 @@
+{
+  "condition": {
+    "airspeed_m_s": 55,
+    "altitude_m": 1000,
+    "latitude_deg": 0,
+    "heading": "north",
+    "jsbsim_model": "c172x (symmetric payload, fixed external thrust, direct surface angles)"
+  },
+  "level1_equations_of_motion": {
+    "samples": 40,
+    "max_abs_error_raw": [
+      0.0126661,
+      0.02662179,
+      0.04070309,
+      0.0000358464,
+      0.0000504266,
+      0.000033953
+    ],
+    "max_abs_error_after_earth_rotation": [
+      1.36779e-13,
+      1.7697e-13,
+      1.12266e-12,
+      0.0000358464,
+      0.0000504266,
+      0.000033953
+    ],
+    "max_abs_euler_rate_error_rad_s": [
+      8.33e-17,
+      1.11e-16,
+      1.11e-16
+    ],
+    "max_abs_ned_velocity_error_m_s": [
+      1.71e-13,
+      1.28e-13,
+      4.26e-14
+    ]
+  },
+  "stock": {
+    "mass_properties": {
+      "mass_kg": 970.6876584,
+      "wing_area_m2": 16.16512896,
+      "wing_span_m": 10.9728,
+      "mean_chord_m": 1.49352
+    },
+    "fit_quality": {
+      "CL": {
+        "r_squared": 0.9999988383,
+        "rms_residual": 0.0002105635
+      },
+      "CD": {
+        "r_squared": 0.9739806742,
+        "rms_residual": 0.0009427034
+      },
+      "CY": {
+        "r_squared": 1,
+        "rms_residual": 1.48e-17
+      },
+      "Cl": {
+        "r_squared": 0.9998690992,
+        "rms_residual": 0.0001116003
+      },
+      "Cm": {
+        "r_squared": 0.998682974,
+        "rms_residual": 0.00162957
+      },
+      "Cn": {
+        "r_squared": 0.9999998893,
+        "rms_residual": 8.256e-7
+      },
+      "diagnostics": {
+        "CD_abs_beta": 0.1696256769
+      }
+    },
+    "reconstruction": {
+      "force_rms_N": [
+        137.4827,
+        5.58373,
+        5.74726
+      ],
+      "moment_rms_Nm": [
+        33.2838,
+        66.1506,
+        0.246229
+      ]
+    },
+    "level2": {
+      "trim": {
+        "jsbsim": {
+          "alpha_deg": 0.38562493,
+          "elevator_deg": 5.23373855,
+          "thrust_N": 1209.59216,
+          "residual": 1.9246e-9
+        },
+        "repo": {
+          "alpha_deg": 0.37934501,
+          "elevator_deg": 5.40543491,
+          "thrust_N": 1232.69631,
+          "residual": 2.8682e-16
+        }
+      },
+      "modes_jsbsim": {
+        "short_period": {
+          "re": -4.9384213,
+          "im": 4.7743592,
+          "wn_rad_s": 6.8689527,
+          "zeta": 0.7189482,
+          "period_s": 1.3160269
+        },
+        "phugoid": {
+          "re": -0.0197444,
+          "im": 0.2073219,
+          "wn_rad_s": 0.20826,
+          "zeta": 0.0948065,
+          "period_s": 30.3064
+        },
+        "dutch_roll": {
+          "re": -0.5900719,
+          "im": 2.7542776,
+          "wn_rad_s": 2.8167765,
+          "zeta": 0.2094848,
+          "period_s": 2.2812462
+        },
+        "roll_subsidence": {
+          "re": -10.520698,
+          "im": 0,
+          "wn_rad_s": 10.520698,
+          "zeta": 0,
+          "period_s": 0
+        },
+        "spiral": {
+          "re": -0.02142077,
+          "im": 0,
+          "wn_rad_s": 0.02142077,
+          "zeta": 0,
+          "period_s": 0
+        }
+      },
+      "modes_repo": {
+        "short_period": {
+          "re": -4.9186948,
+          "im": 4.7931075,
+          "wn_rad_s": 6.8678554,
+          "zeta": 0.7161908,
+          "period_s": 1.3108793
+        },
+        "phugoid": {
+          "re": -0.0205448,
+          "im": 0.1776461,
+          "wn_rad_s": 0.1788301,
+          "zeta": 0.1148844,
+          "period_s": 35.3691
+        },
+        "dutch_roll": {
+          "re": -0.5931069,
+          "im": 2.7553242,
+          "wn_rad_s": 2.818437,
+          "zeta": 0.2104382,
+          "period_s": 2.2803797
+        },
+        "roll_subsidence": {
+          "re": -10.51408,
+          "im": 0,
+          "wn_rad_s": 10.51408,
+          "zeta": 0,
+          "period_s": 0
+        },
+        "spiral": {
+          "re": -0.01957045,
+          "im": 0,
+          "wn_rad_s": 0.01957045,
+          "zeta": 0,
+          "period_s": 0
+        }
+      }
+    },
+    "level3": {
+      "elevator_doublet": {
+        "label": "Elevator doublet (+/-1 deg, 1 s each), 40 s",
+        "errors": {
+          "primary": {
+            "u": {
+              "max_diff_pct_of_peak": 43.0586,
+              "rms_diff_pct_of_peak": 20.3011
+            },
+            "q": {
+              "max_diff_pct_of_peak": 13.88,
+              "rms_diff_pct_of_peak": 0.9131
+            },
+            "theta": {
+              "max_diff_pct_of_peak": 8.5682,
+              "rms_diff_pct_of_peak": 4.5751
+            },
+            "alpha": {
+              "max_diff_pct_of_peak": 7.8498,
+              "rms_diff_pct_of_peak": 0.9259
+            },
+            "altitude": {
+              "max_diff_pct_of_peak": 40.5344,
+              "rms_diff_pct_of_peak": 20.3317
+            }
+          },
+          "secondary": {}
+        }
+      },
+      "aileron_pulse": {
+        "label": "Aileron pulse (+1 deg, 1.5 s) with rudder held, 20 s",
+        "errors": {
+          "primary": {
+            "v": {
+              "max_diff_pct_of_peak": 2.3912,
+              "rms_diff_pct_of_peak": 0.8359
+            },
+            "p": {
+              "max_diff_pct_of_peak": 10.3639,
+              "rms_diff_pct_of_peak": 0.6293
+            },
+            "r": {
+              "max_diff_pct_of_peak": 1.6601,
+              "rms_diff_pct_of_peak": 0.8545
+            },
+            "phi": {
+              "max_diff_pct_of_peak": 2.3096,
+              "rms_diff_pct_of_peak": 1.3037
+            },
+            "beta": {
+              "max_diff_pct_of_peak": 2.3889,
+              "rms_diff_pct_of_peak": 0.8028
+            }
+          },
+          "secondary": {}
+        }
+      },
+      "rudder_pulse": {
+        "label": "Rudder pulse (+1 deg, 1 s), 20 s",
+        "errors": {
+          "primary": {
+            "v": {
+              "max_diff_pct_of_peak": 3.5334,
+              "rms_diff_pct_of_peak": 1.0755
+            },
+            "p": {
+              "max_diff_pct_of_peak": 4.0187,
+              "rms_diff_pct_of_peak": 1.1774
+            },
+            "r": {
+              "max_diff_pct_of_peak": 5.1833,
+              "rms_diff_pct_of_peak": 1.53
+            },
+            "phi": {
+              "max_diff_pct_of_peak": 2.4983,
+              "rms_diff_pct_of_peak": 1.4064
+            },
+            "beta": {
+              "max_diff_pct_of_peak": 3.6389,
+              "rms_diff_pct_of_peak": 1.1008
+            }
+          },
+          "secondary": {}
+        }
+      }
+    }
+  },
+  "alpha_dot_terms_off": {
+    "level2": {
+      "modes_jsbsim": {
+        "short_period": {
+          "re": -4.27434,
+          "im": 5.42809,
+          "wn_rad_s": 6.9089913,
+          "zeta": 0.6186634,
+          "period_s": 1.1575313
+        },
+        "phugoid": {
+          "re": -0.0194441,
+          "im": 0.2073564,
+          "wn_rad_s": 0.2082661,
+          "zeta": 0.0933618,
+          "period_s": 30.3014
+        },
+        "dutch_roll": {
+          "re": -0.5900719,
+          "im": 2.7542776,
+          "wn_rad_s": 2.8167765,
+          "zeta": 0.2094848,
+          "period_s": 2.2812462
+        },
+        "roll_subsidence": {
+          "re": -10.5207,
+          "im": 0,
+          "wn_rad_s": 10.5207,
+          "zeta": 0,
+          "period_s": 0
+        },
+        "spiral": {
+          "re": -0.0214208,
+          "im": 0,
+          "wn_rad_s": 0.0214208,
+          "zeta": 0,
+          "period_s": 0
+        }
+      },
+      "modes_repo": {
+        "short_period": {
+          "re": -4.2549049,
+          "im": 5.4401825,
+          "wn_rad_s": 6.9065043,
+          "zeta": 0.6160721,
+          "period_s": 1.1549586
+        },
+        "phugoid": {
+          "re": -0.0199702,
+          "im": 0.2019573,
+          "wn_rad_s": 0.2029422,
+          "zeta": 0.0984032,
+          "period_s": 31.11145
+        },
+        "dutch_roll": {
+          "re": -0.5931079,
+          "im": 2.7553244,
+          "wn_rad_s": 2.8184374,
+          "zeta": 0.2104386,
+          "period_s": 2.2803795
+        },
+        "roll_subsidence": {
+          "re": -10.5141,
+          "im": 0,
+          "wn_rad_s": 10.5141,
+          "zeta": 0,
+          "period_s": 0
+        },
+        "spiral": {
+          "re": -0.0195703,
+          "im": 0,
+          "wn_rad_s": 0.0195703,
+          "zeta": 0,
+          "period_s": 0
+        }
+      }
+    },
+    "level3": {
+      "elevator_doublet": {
+        "label": "Elevator doublet (+/-1 deg, 1 s each), 40 s",
+        "errors": {
+          "primary": {
+            "u": {
+              "max_diff_pct_of_peak": 8.6973,
+              "rms_diff_pct_of_peak": 3.9942
+            },
+            "q": {
+              "max_diff_pct_of_peak": 12.2678,
+              "rms_diff_pct_of_peak": 0.7084
+            },
+            "theta": {
+              "max_diff_pct_of_peak": 3.7514,
+              "rms_diff_pct_of_peak": 0.9235
+            },
+            "alpha": {
+              "max_diff_pct_of_peak": 8.3105,
+              "rms_diff_pct_of_peak": 0.6973
+            },
+            "altitude": {
+              "max_diff_pct_of_peak": 9.1502,
+              "rms_diff_pct_of_peak": 4.4047
+            }
+          },
+          "secondary": {}
+        }
+      }
+    }
+  }
+}

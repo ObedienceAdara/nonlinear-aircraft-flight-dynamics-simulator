@@ -1,3 +1,6 @@
 numpy>=1.26,<2.5
 matplotlib>=3.8
 pytest>=8.0
+
+# JSBSim is only required for the external comparison harness.
+jsbsim>=1.2
