@@ -336,3 +336,14 @@ def test_thrust_station_is_written_in_inches_and_matches_cg():
     assert thrust.attrib["unit"] == "LBS"
     location = thrust.find("location")
     assert location is not None and location.attrib["unit"] == "IN"
+
+def test_angular_frame_transform_handles_diagonal_inertia():
+    omega_e = np.array([1.0, 0.0, 0.0]) * C.OMEGA_EARTH if hasattr(C, "OMEGA_EARTH") else np.array([7.292115e-5, 0.0, 0.0])
+    omega_rel = np.array([0.1, -0.2, 0.03])
+    moment = np.array([30.0, -12.0, 2.0])
+    inertia = np.diag([1000.0, 1500.0, 2300.0])
+    actual = C.jsbsim_ecef_angular_acceleration(omega_e, omega_rel, moment, inertia)
+    omega_i = omega_rel + omega_e
+    expected_i_dot = np.linalg.solve(inertia, moment - np.cross(omega_i, inertia @ omega_i))
+    expected = expected_i_dot + np.cross(omega_i, omega_e)
+    np.testing.assert_allclose(actual, expected, rtol=1e-13, atol=1e-13)
