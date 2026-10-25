@@ -114,3 +114,15 @@ def test_drag_quadratic_alpha_coefficient_is_fitted(fitted):
     assert "CD_alpha2" in coeffs
     assert np.isfinite(coeffs["CD_alpha2"])
     assert coeffs["CD_alpha2"] != pytest.approx(0.32, abs=1e-6)
+
+def test_drag_r_squared_uses_only_supported_terms(fitted):
+    _, _, quality, coeffs, data = fitted
+    alpha, de, observed = data["alpha"], data["de"], data["CD"]
+    predicted = (
+        coeffs["CD0"] + coeffs["CD_alpha"] * alpha
+        + coeffs["CD_alpha2"] * alpha**2 + coeffs["CD_de2"] * de**2
+    )
+    r_squared = 1.0 - np.sum((observed - predicted) ** 2) / np.sum(
+        (observed - np.mean(observed)) ** 2
+    )
+    assert quality["CD"]["r_squared"] == pytest.approx(r_squared, abs=1e-12)
