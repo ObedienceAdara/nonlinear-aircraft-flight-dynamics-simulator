@@ -369,3 +369,12 @@ def test_fit_metrics_marks_constant_observation_r_squared_undefined():
 
     metrics = _fit_metrics(np.ones(6), np.ones(6))
     assert np.isnan(metrics["r_squared"])
+
+def test_fit_quality_residuals_match_applied_coefficient_prediction(fitted):
+    _, _, quality, coeffs, data = fitted
+    alpha, de, q = data["alpha"], data["de"], data["q"]
+    chord = 1.49352
+    predicted = coeffs["CL0"] + coeffs["CL_alpha"] * alpha + coeffs["CL_de"] * de + coeffs["CL_q"] * q * chord / (2*C.V_TRIM)
+    residual = data["CL"] - predicted
+    assert quality["CL"]["rms_residual"] == pytest.approx(np.sqrt(np.mean(residual**2)), abs=1e-12)
+    assert quality["CL"]["max_residual"] == pytest.approx(np.max(np.abs(residual)), abs=1e-12)
