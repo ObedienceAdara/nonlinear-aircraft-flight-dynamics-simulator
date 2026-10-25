@@ -48,7 +48,7 @@ def _case_rows(cases):
     f"| {e['rms_diff']:.3e} | {e['max_diff_pct_of_peak']:.1f}% "
     f"| {e['rms_diff_pct_of_peak']:.1f}% |"
    )
- return "\\n".join(out)
+ return "\n".join(out)
 
 def write(summary:dict,path:Path)->None:
  l1=summary["level1_equations_of_motion"]; stock=summary["stock"]; diag=summary["alpha_dot_terms_off"]
@@ -71,7 +71,7 @@ def write(summary:dict,path:Path)->None:
   extra=(f"{alpha_dot_score:.5f}" if alpha_dot_score is not None
          else f"{beta_score:.5f}" if beta_score is not None else "—")
   fits.append(f"| {k} | {fq[k]['r_squared']:.5f} | {extra} | {fq[k]['rms_residual']:.2e} |")
- fits="\\n".join(fits)
+ fits="\n".join(fits)
  alpha_dot_notes=(
   f"CL_q: q-only fit {diagnostic.get('CL_q_only_fit', fitted_coefficients['CL_q']):.3f}; "
   f"alpha-dot-adjusted partial derivative {diagnostic.get('CL_q_alpha_dot_adjusted', fitted_coefficients['CL_q']):.3f}; "
