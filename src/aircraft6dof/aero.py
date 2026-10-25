@@ -5,7 +5,7 @@ import numpy as np
 @dataclass(frozen=True)
 class AeroCoefficients:
     CL0:float=.25; CL_alpha:float=5.2; CL_de:float=.45; CL_q:float=5.5
-    CD0:float=.025; CD_alpha:float=0.; CD_alpha2:float=.32; CD_de2:float=.02
+    CD0:float=.025; CD_alpha2:float=.32; CD_de2:float=.02
     # Optional drag rise with absolute sideslip, identified for the JSBSim C172 fit.
     CD_abs_beta:float=0.
     CY_beta:float=-.90; CY_da:float=.08; CY_dr:float=.20
