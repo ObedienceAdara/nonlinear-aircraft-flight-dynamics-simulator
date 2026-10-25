@@ -56,39 +56,107 @@ def collect(jsb, airspeed_m_s: float, altitude_m: float, alpha0: float,
     return data
 
 
+def _fit_metrics(observed: np.ndarray, predicted: np.ndarray) -> dict:
+    """Compute residual metrics against the values actually predicted."""
+    residual = np.asarray(observed, dtype=float) - np.asarray(predicted, dtype=float)
+    centered = np.asarray(observed, dtype=float) - float(np.mean(observed))
+    total_ss = float(centered @ centered)
+    residual_ss = float(residual @ residual)
+    r_squared = 1.0 - residual_ss / total_ss if total_ss > 0.0 else float("nan")
+    spread = float(np.std(observed))
+    return {
+        "rms_residual": float(np.sqrt(np.mean(residual**2))),
+        "max_residual": float(np.max(np.abs(residual))),
+        "spread_of_coefficient": spread,
+        "r_squared": r_squared,
+    }
+
+
 def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float) -> tuple[dict, dict]:
-    """Least-squares fit for the coefficient terms present in aircraft6dof.aero."""
-    alpha, beta, de, da, dr = (data[key] for key in ("alpha", "beta", "de", "da", "dr"))
-    p_hat = data["p"] * span_m / (2 * airspeed_m_s)
-    q_hat = data["q"] * chord_m / (2 * airspeed_m_s)
-    r_hat = data["r"] * span_m / (2 * airspeed_m_s)
+    """Identify supported derivatives without hiding unmodelled terms in R².
+
+    CL_q and Cm_q are estimated jointly with diagnostic alpha-dot terms. This
+    prevents an omitted JSBSim alpha-dot contribution from being absorbed into
+    the repository's q derivatives. The alpha-dot coefficients are diagnostic
+    only: the compact repository model does not implement them. Their impact is
+    therefore reported separately from the score of the coefficients actually
+    supplied to AeroCoefficients.
+
+    Drag is fitted using every drag term the repository can represent,
+    including CD_alpha2. An additional abs(beta) regression is diagnostic only
+    and never contributes to the deployed CD R².
+    """
+    alpha, beta, de, da, dr = (np.asarray(data[key], dtype=float)
+                                for key in ("alpha", "beta", "de", "da", "dr"))
+    p_hat = np.asarray(data["p"], dtype=float) * span_m / (2 * airspeed_m_s)
+    q_hat = np.asarray(data["q"], dtype=float) * chord_m / (2 * airspeed_m_s)
+    r_hat = np.asarray(data["r"], dtype=float) * span_m / (2 * airspeed_m_s)
+    alpha_dot_hat = np.asarray(data["alpha_dot"], dtype=float) * chord_m / (2 * airspeed_m_s)
     ones = np.ones_like(alpha)
     plan = {
         "CL": ([ones, alpha, de, q_hat], ["CL0", "CL_alpha", "CL_de", "CL_q"]),
-        "CD": ([ones, alpha, de**2, np.abs(beta)], ["CD0", "CD_alpha", "CD_de2", "~CD_abs_beta"]),
-        "CY": ([beta, da, dr, p_hat, r_hat], ["CY_beta", "CY_da", "CY_dr", "CY_p", "CY_r"]),
-        "Cl": ([beta, p_hat, r_hat, da, dr], ["Cl_beta", "Cl_p", "Cl_r", "Cl_da", "Cl_dr"]),
-        "Cm": ([ones, alpha, q_hat, de], ["Cm0", "Cm_alpha", "Cm_q", "Cm_de"]),
-        "Cn": ([beta, p_hat, r_hat, da, dr], ["Cn_beta", "Cn_p", "Cn_r", "Cn_da", "Cn_dr"]),
+        "CD": ([ones, alpha, alpha**2, de**2],
+               ["CD0", "CD_alpha", "CD_alpha2", "CD_de2"]),
+        "CY": ([beta, da, dr, p_hat, r_hat],
+               ["CY_beta", "CY_da", "CY_dr", "CY_p", "CY_r"]),
+        "Cl": ([beta, p_hat, r_hat, da, dr],
+               ["Cl_beta", "Cl_p", "Cl_r", "Cl_da", "Cl_dr"]),
+        "Cm": ([ones, alpha, q_hat, de],
+               ["Cm0", "Cm_alpha", "Cm_q", "Cm_de"]),
+        "Cn": ([beta, p_hat, r_hat, da, dr],
+               ["Cn_beta", "Cn_p", "Cn_r", "Cn_da", "Cn_dr"]),
     }
     coefficients, quality, diagnostics = {}, {}, {}
     for channel, (columns, names) in plan.items():
         X = np.column_stack(columns)
-        y = data[channel]
-        solution, *_ = np.linalg.lstsq(X, y, rcond=None)
-        residual = y - X @ solution
-        spread = float(np.std(y))
-        for name, value in zip(names, map(float, solution)):
-            (diagnostics if name.startswith("~") else coefficients)[name.lstrip("~")] = value
+        y = np.asarray(data[channel], dtype=float)
+        model_solution, *_ = np.linalg.lstsq(X, y, rcond=None)
+        selected_solution = model_solution
+        extended_metrics = None
+        if channel in ("CL", "Cm"):
+            # Compare the q-only fit with a fit that estimates the JSBSim
+            # alpha-dot derivative independently. Keep only q and the other
+            # supported coefficients in the repository's coefficient object.
+            X_extended = np.column_stack([X, alpha_dot_hat])
+            extended_solution, *_ = np.linalg.lstsq(X_extended, y, rcond=None)
+            selected_solution = extended_solution[:-1]
+            diagnostics[f"{channel}_adot"] = float(extended_solution[-1])
+            diagnostics[f"{channel}_q_only_fit"] = float(
+                model_solution[names.index(f"{channel}_q")]
+            )
+            diagnostics[f"{channel}_q_alpha_dot_adjusted"] = float(
+                selected_solution[names.index(f"{channel}_q")]
+            )
+            extended_metrics = _fit_metrics(y, X_extended @ extended_solution)
+        for name, value in zip(names, map(float, selected_solution)):
+            coefficients[name] = value
+
+        # The score below is the performance of the actual coefficients that
+        # will be passed into AeroCoefficients, not the extended diagnostic.
+        actual_metrics = _fit_metrics(y, X @ selected_solution)
+        best_supported_metrics = _fit_metrics(y, X @ model_solution)
         quality[channel] = {
-            "rms_residual": float(np.sqrt(np.mean(residual**2))),
-            "max_residual": float(np.max(np.abs(residual))),
-            "spread_of_coefficient": spread,
-            "r_squared": float(1.0 - np.var(residual) / np.var(y)) if spread > 0 else float("nan"),
+            **actual_metrics,
+            "r_squared_best_supported_terms": best_supported_metrics["r_squared"],
         }
+        if extended_metrics is not None:
+            quality[channel]["r_squared_with_alpha_dot_diagnostic"] = (
+                extended_metrics["r_squared"]
+            )
+
+        if channel == "CD":
+            # This extra predictor is deliberately excluded from coefficients.
+            # It quantifies the value of a term the compact model cannot apply.
+            X_diagnostic = np.column_stack([X, np.abs(beta)])
+            diagnostic_solution, *_ = np.linalg.lstsq(X_diagnostic, y, rcond=None)
+            diagnostic_metrics = _fit_metrics(y, X_diagnostic @ diagnostic_solution)
+            diagnostics["CD_abs_beta"] = float(diagnostic_solution[-1])
+            diagnostics["CD_r_squared_with_abs_beta"] = diagnostic_metrics["r_squared"]
+            diagnostics["CD_rms_residual_with_abs_beta"] = diagnostic_metrics["rms_residual"]
+            diagnostics["CD_max_residual_with_abs_beta"] = diagnostic_metrics["max_residual"]
+
     quality["diagnostics"] = diagnostics
     return coefficients, quality
-
 
 def reconstruction_error(coeffs: dict, data: dict, geometry, cd_abs_beta: float = 0.0) -> dict:
     """Check fitted loads by rebuilding JSBSim sampled body-axis loads with repo equations."""
