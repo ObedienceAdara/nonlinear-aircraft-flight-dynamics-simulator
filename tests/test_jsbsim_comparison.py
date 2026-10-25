@@ -125,19 +125,20 @@ def test_drag_r_squared_uses_only_supported_terms(fitted):
     predicted = (
         coeffs["CD0"] + coeffs["CD_alpha"] * alpha
         + coeffs["CD_alpha2"] * alpha**2 + coeffs["CD_de2"] * de**2
+        + coeffs["CD_abs_beta"] * np.abs(data["beta"])
     )
     r_squared = 1.0 - np.sum((observed - predicted) ** 2) / np.sum(
         (observed - np.mean(observed)) ** 2
     )
     assert quality["CD"]["r_squared"] == pytest.approx(r_squared, abs=1e-12)
 
-def test_sideslip_drag_diagnostic_does_not_inflate_applied_model_r_squared(fitted):
+def test_sideslip_drag_is_applied_and_improves_drag_fit_quality(fitted):
     _, _, quality, coeffs, _ = fitted
     diagnostics = quality["diagnostics"]
-    assert "CD_abs_beta" in diagnostics
-    assert "CD_r_squared_with_abs_beta" in diagnostics
-    assert diagnostics["CD_r_squared_with_abs_beta"] >= quality["CD"]["r_squared"] - 1e-10
-    assert "CD_abs_beta" not in coeffs
+    assert "CD_abs_beta" in coeffs
+    assert coeffs["CD_abs_beta"] == pytest.approx(0.17, abs=0.02)
+    assert "CD_r_squared_without_abs_beta" in diagnostics
+    assert quality["CD"]["r_squared"] >= diagnostics["CD_r_squared_without_abs_beta"] - 1e-10
 
 def test_fit_can_score_a_fixed_coefficient_set(fitted, plane):
     _, _, _, coeffs, data = fitted
