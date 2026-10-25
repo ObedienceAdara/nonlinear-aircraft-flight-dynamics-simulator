@@ -192,3 +192,11 @@ def test_angular_frame_correction_removes_ecef_inertial_residual(plane):
     assert max(raw) > 1e-5
     assert max(corrected) < 1e-10
     assert max(corrected) < max(raw) * 1e-4
+
+def test_angular_frame_transform_reduces_to_euler_equation_without_earth_rate():
+    omega = np.array([0.13, -0.08, 0.04])
+    moment = np.array([13.0, -9.0, 4.0])
+    inertia = np.array([[1200.0, 0.0, 12.0], [0.0, 1800.0, 0.0], [12.0, 0.0, 2500.0]])
+    expected = np.linalg.solve(inertia, moment - np.cross(omega, inertia @ omega))
+    actual = C.jsbsim_ecef_angular_acceleration(np.zeros(3), omega, moment, inertia)
+    np.testing.assert_allclose(actual, expected, rtol=1e-13, atol=1e-13)
