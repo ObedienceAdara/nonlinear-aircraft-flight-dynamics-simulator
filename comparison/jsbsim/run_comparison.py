@@ -27,7 +27,7 @@ def pipeline(no_alpha_dot:bool,with_cases:bool=True,common_coefficients:dict|Non
  out={"mass_properties":{k:(v.tolist() if hasattr(v,"tolist") else v) for k,v in mp.items()},
   "environment":{"density_kg_m3":env.density_kg_m3,"gravity_down_m_s2":float(env.gravity_ned_m_s2[2])},
   "fitted_coefficients":coeffs,"fit_quality":quality,
-  "reconstruction":reconstruction_error(coeffs,data,aircraft.parameters.geometry,quality["diagnostics"]["CD_abs_beta"])}
+  "reconstruction":reconstruction_error(coeffs,data,aircraft.parameters.geometry)}
  if common_coefficients is not None:
   out["independent_refit_diagnostic"]={
    "CL_q":identified["CL_q"],"Cm_q":identified["Cm_q"],
