@@ -1,12 +1,13 @@
 # Canonical Simulator Architecture
 
-The repository is organized around three active areas:
+The repository is organized around four active areas:
 
 1. **src/aircraft6dof/** — the canonical simulator implementation. New physics belongs here.
 2. **studies/** — reproducible engineering studies built on the canonical model.
-3. **tests/** — fast verification and regression tests for the physics, integration, reporting, and studies.
+3. **comparison/** — controlled code-to-code comparisons, including the optional JSBSim harness.
+4. **tests/** — fast verification and regression tests for the physics, integration, reporting, studies, and comparisons.
 
-main.py defines the default demonstration case. Generated CSV, JSON, plots, and animations are runtime outputs under outputs/; they are not separate simulator implementations.
+main.py defines the default demonstration case. Generated CSV, JSON, plots, and animations under outputs/ are runtime artifacts, not separate simulator implementations. The JSBSim comparison is useful for implementation consistency, but it fits this repository's compact aerodynamic model to JSBSim and is not independent aircraft validation.
 
 ## Physics pipeline
 
@@ -134,6 +135,33 @@ The core includes:
 - reproducible stochastic turbulence process.
 
 The stochastic class implements first-order longitudinal and second-order lateral/vertical Dryden spectral shapes. It uses exact discrete-time state transitions and integrated process-noise covariance for each fixed-airspeed step, with configured sigma values representing stationary RMS intensities. It is not a complete MIL-F-8785C implementation: severity/altitude parameter selection, angular turbulence, and independent spectral conformance testing are outside the current scope.
+
+## Time-dependent inputs and integration
+
+The RK4 state integrator accepts stage-time-aware derivative callbacks. In the
+canonical simulator, time-dependent deterministic controls and environment
+callbacks are sampled at the RK4 stage times instead of sampling the environment
+once and holding it through the complete step.
+
+- Without an `ActuatorSet`, aileron, elevator, rudder, and throttle callbacks
+  are evaluated at each RK4 stage.
+- With an `ActuatorSet`, each surface actuator is advanced once at the interval
+  boundary and its deflection is held over that aircraft step. Throttle is
+  evaluated at each RK4 stage because it is not part of the surface actuator
+  model.
+- Piecewise-constant commands should change on integration-grid boundaries.
+  The step endpoint is treated as the left limit for integration, and the next
+  interval samples the new command. Refine the timestep or split the step at
+  known discontinuities that do not lie on the grid.
+- `DrydenTurbulence.step()` is a discrete stochastic state update, not a pure
+  function of time. Advance it once per chosen turbulence interval and hold the
+  returned sample for the RK4 stages; do not call `step()` from an environment
+  callback that the RK4 integrator invokes four times per aircraft interval.
+
+The default `main.py` case uses a deterministic one-minus-cosine gust and does
+not instantiate `DrydenTurbulence`. Smooth-input timestep convergence remains
+the appropriate check for whether a selected step is small enough for a chosen
+response metric.
 
 ## Operating points, local linearization and modes
 
