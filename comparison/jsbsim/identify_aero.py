@@ -143,9 +143,10 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
         selected_solution = model_solution
         extended_metrics = None
         if channel in ("CL", "Cm"):
-            # Compare the q-only fit with a fit that estimates the JSBSim
-            # alpha-dot derivative independently. Keep only q and the other
-            # supported coefficients in the repository's coefficient object.
+            # Include the JSBSim alpha-dot rate as a nuisance predictor when
+            # identifying the supported CL/Cm terms. The returned vector below
+            # omits only the final alpha-dot coefficient; the run-time model
+            # does not apply that additional force/moment term.
             X_extended = np.column_stack([X, alpha_dot_hat])
             extended_solution, *_ = np.linalg.lstsq(X_extended, y, rcond=None)
             # Use the joint fit for the supported coefficient estimates so
