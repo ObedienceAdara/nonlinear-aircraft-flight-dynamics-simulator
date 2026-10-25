@@ -313,3 +313,11 @@ def test_loaded_cg_satisfies_weighted_moment_equilibrium():
     for _, weight, x, y, z in model_builder.PAYLOAD:
         weighted_station += weight * np.array([x, y, z])
     np.testing.assert_allclose(total_weight * loaded_cg, weighted_station, atol=1e-8)
+
+def test_loaded_cg_rejects_missing_empty_weight():
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(model_builder.source_aircraft_file()).getroot()
+    root.find("mass_balance").remove(root.find("mass_balance").find("emptywt"))
+    with pytest.raises(RuntimeError, match="empty weight"):
+        model_builder._loaded_cg_in(root)
