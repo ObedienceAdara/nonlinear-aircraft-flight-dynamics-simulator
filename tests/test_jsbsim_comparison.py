@@ -146,3 +146,9 @@ def test_fit_can_score_a_fixed_coefficient_set(fitted, plane):
     assert quality["CL"]["r_squared"] == pytest.approx(
         quality["CL"]["r_squared"]
     )
+
+def test_fit_rejects_incomplete_fixed_coefficient_set(fitted, plane):
+    _, _, _, _, data = fitted
+    mp = plane.mass_properties()
+    with pytest.raises(ValueError, match="fixed_coefficients missing fitted terms"):
+        fit(data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"], fixed_coefficients={})
