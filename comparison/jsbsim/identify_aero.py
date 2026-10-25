@@ -72,7 +72,7 @@ def _fit_metrics(observed: np.ndarray, predicted: np.ndarray) -> dict:
     }
 
 
-def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float) -> tuple[dict, dict]:
+def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,\n        fixed_coefficients: dict | None = None) -> tuple[dict, dict]:
     """Identify supported derivatives without hiding unmodelled terms in R².
 
     CL_q and Cm_q are estimated jointly with diagnostic alpha-dot terms. This
@@ -106,7 +106,7 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float) -> tuple
         "Cn": ([beta, p_hat, r_hat, da, dr],
                ["Cn_beta", "Cn_p", "Cn_r", "Cn_da", "Cn_dr"]),
     }
-    coefficients, quality, diagnostics = {}, {}, {}
+    coefficients, quality, diagnostics = {}, {}, {}\n    if fixed_coefficients is not None:\n        missing = sorted(set(name for _, names in plan.values() for name in names) - set(fixed_coefficients))\n        if missing:\n            raise ValueError(f\"fixed_coefficients missing fitted terms: {missing}\")
     for channel, (columns, names) in plan.items():
         X = np.column_stack(columns)
         y = np.asarray(data[channel], dtype=float)
@@ -128,12 +128,16 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float) -> tuple
                 selected_solution[names.index(f"{channel}_q")]
             )
             extended_metrics = _fit_metrics(y, X_extended @ extended_solution)
-        for name, value in zip(names, map(float, selected_solution)):
+        effective_solution = (
+            selected_solution if fixed_coefficients is None
+            else np.asarray([fixed_coefficients[name] for name in names], dtype=float)
+        )
+        for name, value in zip(names, map(float, effective_solution)):
             coefficients[name] = value
 
         # The score below is the performance of the actual coefficients that
         # will be passed into AeroCoefficients, not the extended diagnostic.
-        actual_metrics = _fit_metrics(y, X @ selected_solution)
+        actual_metrics = _fit_metrics(y, X @ effective_solution)
         best_supported_metrics = _fit_metrics(y, X @ model_solution)
         quality[channel] = {
             **actual_metrics,
