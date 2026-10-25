@@ -143,9 +143,16 @@ def test_fit_can_score_a_fixed_coefficient_set(fitted, plane):
         fixed_coefficients=coeffs,
     )
     assert fixed == pytest.approx(coeffs)
-    assert quality["CL"]["r_squared"] == pytest.approx(
-        quality["CL"]["r_squared"]
+    alpha = data["alpha"]
+    de = data["de"]
+    observed = data["CL"]
+    predicted = (fixed["CL0"] + fixed["CL_alpha"] * alpha
+                 + fixed["CL_de"] * de
+                 + fixed["CL_q"] * data["q"] * mp["mean_chord_m"] / (2 * C.V_TRIM))
+    expected_r2 = 1.0 - np.sum((observed - predicted) ** 2) / np.sum(
+        (observed - np.mean(observed)) ** 2
     )
+    assert quality["CL"]["r_squared"] == pytest.approx(expected_r2, abs=1e-12)
 
 def test_fit_rejects_incomplete_fixed_coefficient_set(fitted, plane):
     _, _, _, _, data = fitted
