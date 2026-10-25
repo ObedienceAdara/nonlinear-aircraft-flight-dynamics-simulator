@@ -176,3 +176,11 @@ def test_generated_thrust_location_matches_loaded_cg():
     actual = tuple(float(thrust.find(axis).text) for axis in "xyz")
     assert actual == pytest.approx(expected, abs=1e-9)
     assert actual != pytest.approx((41.0, 0.0, 36.5), abs=0.1)
+
+def test_loaded_cg_remains_laterally_centered():
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(model_builder.source_aircraft_file()).getroot()
+    assert model_builder._loaded_cg_in(root)[1] == pytest.approx(0.0, abs=1e-12)
+    lateral_payload_moment = sum(weight * y for _, weight, _, y, _ in model_builder.PAYLOAD)
+    assert lateral_payload_moment == pytest.approx(0.0, abs=1e-12)
