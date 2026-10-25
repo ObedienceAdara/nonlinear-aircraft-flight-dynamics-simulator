@@ -72,7 +72,8 @@ def _fit_metrics(observed: np.ndarray, predicted: np.ndarray) -> dict:
     }
 
 
-def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,\n        fixed_coefficients: dict | None = None) -> tuple[dict, dict]:
+def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
+        fixed_coefficients: dict | None = None) -> tuple[dict, dict]:
     """Identify supported derivatives without hiding unmodelled terms in R².
 
     CL_q and Cm_q are estimated jointly with diagnostic alpha-dot terms. This
@@ -106,7 +107,8 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,\n       
         "Cn": ([beta, p_hat, r_hat, da, dr],
                ["Cn_beta", "Cn_p", "Cn_r", "Cn_da", "Cn_dr"]),
     }
-    coefficients, quality, diagnostics = {}, {}, {}\n    if fixed_coefficients is not None:\n        missing = sorted(set(name for _, names in plan.values() for name in names) - set(fixed_coefficients))\n        if missing:\n            raise ValueError(f\"fixed_coefficients missing fitted terms: {missing}\")
+    coefficients, quality, diagnostics = {}, {}, {}
+    if fixed_coefficients is not None:\n        missing = sorted(set(name for _, names in plan.values() for name in names) - set(fixed_coefficients))\n        if missing:\n            raise ValueError(f\"fixed_coefficients missing fitted terms: {missing}\")
     for channel, (columns, names) in plan.items():
         X = np.column_stack(columns)
         y = np.asarray(data[channel], dtype=float)
