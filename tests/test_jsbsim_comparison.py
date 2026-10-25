@@ -405,3 +405,11 @@ def test_fit_rejects_nonfinite_alpha_dot_samples(fitted, plane):
     invalid["alpha_dot"][0] = np.nan
     with pytest.raises(ValueError, match="alpha_dot.*non-finite"):
         fit(invalid, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"])
+
+def test_fit_rejects_mismatched_sample_lengths(fitted, plane):
+    _, _, _, _, data = fitted
+    mp = plane.mass_properties()
+    invalid = {key: np.array(value, copy=True) for key, value in data.items()}
+    invalid["Cm"] = invalid["Cm"][:-1]
+    with pytest.raises(ValueError, match="Cm.*length"):
+        fit(invalid, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"])
