@@ -321,3 +321,18 @@ def test_loaded_cg_rejects_missing_empty_weight():
     root.find("mass_balance").remove(root.find("mass_balance").find("emptywt"))
     with pytest.raises(RuntimeError, match="empty weight"):
         model_builder._loaded_cg_in(root)
+
+def test_thrust_station_is_written_in_inches_and_matches_cg():
+    import xml.etree.ElementTree as ET
+
+    build_root = model_builder.build_model()
+    xml_path = build_root / "aircraft" / model_builder.MODEL_NAME / (
+        model_builder.MODEL_NAME + ".xml"
+    )
+    thrust = ET.parse(xml_path).getroot().find(
+        "external_reactions/force[@name='thrust']"
+    )
+    assert thrust is not None
+    assert thrust.attrib["unit"] == "LBS"
+    location = thrust.find("location")
+    assert location is not None and location.attrib["unit"] == "IN"
