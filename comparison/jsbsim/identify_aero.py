@@ -76,16 +76,15 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
         fixed_coefficients: dict | None = None) -> tuple[dict, dict]:
     """Identify supported derivatives without hiding unmodelled terms in R².
 
-    CL_q and Cm_q are estimated jointly with diagnostic alpha-dot terms. This
-    prevents an omitted JSBSim alpha-dot contribution from being absorbed into
-    the repository's q derivatives. The alpha-dot coefficients are diagnostic
-    only: the compact repository model does not implement them. Their impact is
-    therefore reported separately from the score of the coefficients actually
-    supplied to AeroCoefficients.
+    CL and Cm are estimated with alpha-dot as a nuisance predictor. The
+    alpha-dot coefficient is diagnostic-only because the compact model does not
+    apply it at runtime; therefore applied-model R² is recomputed after
+    dropping that predictor. The joint fit helps expose rate-derivative
+    confounding without claiming that the complete extended model is deployed.
 
-    Drag is fitted using every drag term the repository can represent,
-    including CD_alpha2. An additional abs(beta) regression is diagnostic only
-    and never contributes to the deployed CD R².
+    Drag is fitted using all implemented terms, including CD_alpha2 and
+    CD_abs_beta. A separate ablation score quantifies the effect of removing
+    the implemented absolute-sideslip drag term.
     """
     if not np.isfinite(airspeed_m_s) or airspeed_m_s <= 0.0:
         raise ValueError("airspeed_m_s must be finite and positive")
