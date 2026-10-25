@@ -149,16 +149,14 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
             # supported coefficients in the repository's coefficient object.
             X_extended = np.column_stack([X, alpha_dot_hat])
             extended_solution, *_ = np.linalg.lstsq(X_extended, y, rcond=None)
-            # Adjust only the rate derivative while retaining the static/control
-            # coefficients from the supported-term fit. Alpha-dot and q are
-            # correlated around this local condition, so allowing the nuisance
-            # column to re-fit CL0/Cm0, alpha slope, and elevator effectiveness
-            # can perturb trim even though alpha-dot itself is not implemented
-            # in the model. This is a deliberate local partial-derivative
-            # correction, not a claim that the full extended model is deployed.
-            selected_solution = model_solution.copy()
+            # Use the joint fit for the supported coefficient estimates so
+            # q-dependent aerodynamic effects are not silently absorbed into
+            # q derivatives when alpha-dot is omitted as a predictor. The
+            # alpha-dot coefficient itself remains diagnostic-only: the compact
+            # model does not apply it at run time. Compare deployed-model R²
+            # below with the alpha-dot column excluded.
+            selected_solution = extended_solution[:-1]
             q_index = names.index(f"{channel}_q")
-            selected_solution[q_index] = extended_solution[q_index]
             diagnostics[f"{channel}_adot"] = float(extended_solution[-1])
             diagnostics[f"{channel}_q_only_fit"] = float(model_solution[q_index])
             diagnostics[f"{channel}_q_alpha_dot_adjusted"] = float(extended_solution[q_index])
