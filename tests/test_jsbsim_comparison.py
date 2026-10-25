@@ -419,3 +419,13 @@ def test_fit_rejects_nonpositive_airspeed(fitted, plane):
     mp = plane.mass_properties()
     with pytest.raises(ValueError, match="airspeed_m_s"):
         fit(data, 0.0, mp["wing_span_m"], mp["mean_chord_m"])
+
+
+def test_fit_rejects_nonfinite_fixed_coefficients(fitted, plane):
+    _, _, _, coeffs, data = fitted
+    mp = plane.mass_properties()
+    invalid = dict(coeffs)
+    invalid["Cm_q"] = np.nan
+    with pytest.raises(ValueError, match="fixed_coefficients contains non-finite"):
+        fit(data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"],
+            fixed_coefficients=invalid)
