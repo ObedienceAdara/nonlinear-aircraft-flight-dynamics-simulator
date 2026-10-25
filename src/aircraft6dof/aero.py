@@ -5,7 +5,9 @@ import numpy as np
 @dataclass(frozen=True)
 class AeroCoefficients:
     CL0:float=.25; CL_alpha:float=5.2; CL_de:float=.45; CL_q:float=5.5
-    CD0:float=.025; CD_alpha2:float=.32; CD_de2:float=.02
+    CD0:float=.025; CD_alpha:float=0.; CD_alpha2:float=.32; CD_de2:float=.02
+    # Optional drag rise with absolute sideslip, identified for the JSBSim C172 fit.
+    CD_abs_beta:float=0.
     CY_beta:float=-.90; CY_da:float=.08; CY_dr:float=.20
     Cl_beta:float=-.12; Cl_p:float=-.50; Cl_r:float=.20; Cl_da:float=.20; Cl_dr:float=.05
     Cm0:float=.04; Cm_alpha:float=-1.10; Cm_q:float=-12.; Cm_de:float=-1.10
@@ -18,7 +20,8 @@ def coefficient_buildup(alpha,beta,p,q,r,V,span,chord,controls,c):
     ph=p*span/(2*V); qh=q*chord/(2*V); rh=r*span/(2*V)
     return {
       "CL":c.CL0+c.CL_alpha*alpha+c.CL_de*de+c.CL_q*qh,
-      "CD":c.CD0+c.CD_alpha*alpha+c.CD_alpha2*alpha**2+c.CD_de2*de**2,
+      "CD":(c.CD0+c.CD_alpha*alpha+c.CD_alpha2*alpha**2+c.CD_de2*de**2
+            +c.CD_abs_beta*abs(beta)),
       "CY":c.CY_beta*beta+c.CY_da*da+c.CY_dr*dr+c.CY_p*ph+c.CY_r*rh,
       "Cl":c.Cl_beta*beta+c.Cl_p*ph+c.Cl_r*rh+c.Cl_da*da+c.Cl_dr*dr,
       "Cm":c.Cm0+c.Cm_alpha*alpha+c.Cm_q*qh+c.Cm_de*de,
