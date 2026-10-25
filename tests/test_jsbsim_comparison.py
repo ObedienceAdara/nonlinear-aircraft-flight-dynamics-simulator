@@ -356,3 +356,10 @@ def test_angular_frame_transform_preserves_finite_results_for_coupled_inertia():
     result = C.jsbsim_ecef_angular_acceleration(omega_e, omega_rel, moment, inertia)
     assert result.shape == (3,)
     assert np.isfinite(result).all()
+
+def test_alpha_dot_extended_regression_never_worsens_residual(fitted):
+    _, _, quality, _, _ = fitted
+    for channel in ("CL", "Cm"):
+        assert quality[channel]["r_squared_with_alpha_dot_diagnostic"] >= (
+            quality[channel]["r_squared_best_supported_terms"] - 1e-12
+        )
