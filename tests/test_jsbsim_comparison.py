@@ -85,3 +85,9 @@ def test_report_writer_includes_validation_boundary(tmp_path):
     text = output.read_text()
     assert "not independent validation against a real aircraft" in text
     assert "does not independently validate either aerodynamic model" in text
+
+def test_collected_alpha_dot_is_finite_and_varies(fitted):
+    _, _, _, _, data = fitted
+    assert "alpha_dot" in data
+    assert np.isfinite(data["alpha_dot"]).all()
+    assert np.std(data["alpha_dot"]) > 1e-8
