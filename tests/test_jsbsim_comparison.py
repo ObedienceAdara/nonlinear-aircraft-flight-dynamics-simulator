@@ -244,7 +244,7 @@ def test_alpha_dot_ab_keeps_repository_coefficients_fixed(plane):
         stock["level2"]["modes_repo"]["phugoid"]["wn_rad_s"], abs=1e-12
     )
     assert "independent_refit_diagnostic" in no_adot
-    assert no_adot["independent_refit_diagnostic"]["note"].find("shared stock-fit") < 0
+    assert "shared stock-fit coefficient set" in no_adot["independent_refit_diagnostic"]["note"]
 
 def test_alpha_dot_disabled_diagnostic_changes_reference_not_repo_model(plane):
     from run_comparison import pipeline
