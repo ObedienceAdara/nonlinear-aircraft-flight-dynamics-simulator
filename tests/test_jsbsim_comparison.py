@@ -245,3 +245,14 @@ def test_alpha_dot_ab_keeps_repository_coefficients_fixed(plane):
     )
     assert "independent_refit_diagnostic" in no_adot
     assert no_adot["independent_refit_diagnostic"]["note"].find("shared stock-fit") < 0
+
+def test_alpha_dot_disabled_diagnostic_changes_reference_not_repo_model(plane):
+    from run_comparison import pipeline
+
+    stock = pipeline(False, with_cases=False)
+    diagnostic = pipeline(True, with_cases=False,
+                          common_coefficients=stock["fitted_coefficients"])
+    assert diagnostic["fitted_coefficients"] == pytest.approx(stock["fitted_coefficients"])
+    assert diagnostic["level2"]["modes_jsbsim"]["short_period"]["zeta"] != pytest.approx(
+        stock["level2"]["modes_jsbsim"]["short_period"]["zeta"], abs=1e-4
+    )
