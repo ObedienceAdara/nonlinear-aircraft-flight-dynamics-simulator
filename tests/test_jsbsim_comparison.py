@@ -99,3 +99,12 @@ def test_pitch_rate_derivatives_are_adjusted_for_alpha_dot(fitted):
     assert coeffs["Cm_q"] == pytest.approx(diagnostic["Cm_q_alpha_dot_adjusted"])
     assert abs(coeffs["CL_q"] - diagnostic["CL_q_only_fit"]) > 0.2
     assert abs(coeffs["Cm_q"] - diagnostic["Cm_q_only_fit"]) > 0.5
+
+def test_alpha_dot_terms_are_diagnostic_not_deployed_coefficients(fitted):
+    _, _, quality, coeffs, _ = fitted
+    assert "CL_adot" in quality["diagnostics"]
+    assert "Cm_adot" in quality["diagnostics"]
+    assert "CL_adot" not in coeffs
+    assert "Cm_adot" not in coeffs
+    assert np.isfinite(quality["diagnostics"]["CL_adot"])
+    assert np.isfinite(quality["diagnostics"]["Cm_adot"])
