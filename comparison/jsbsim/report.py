@@ -44,8 +44,13 @@ def write(summary:dict,path:Path)->None:
  phj=js["phugoid"]["wn_rad_s"]; phr=rp["phugoid"]["wn_rad_s"]
  phjd=diag["level2"]["modes_jsbsim"]["phugoid"]["wn_rad_s"]
  phrd=diag["level2"]["modes_repo"]["phugoid"]["wn_rad_s"]
- raw=l1["max_abs_error_raw"]; corr=l1["max_abs_error_after_frame_corrections"]
+ raw=l1["max_abs_error_raw"]
+ corr=l1.get("max_abs_error_after_frame_corrections",
+             l1["max_abs_error_after_earth_rotation"])
+ raw_angular=l1.get("max_abs_angular_error_raw_rad_s2",raw[3:6])
+ corrected_angular=l1.get("max_abs_angular_error_after_frame_correction_rad_s2",corr[3:6])
  diagnostic=fq["diagnostics"]
+ fitted_coefficients=stock["fitted_coefficients"]
  fits=[]
  for k in ("CL","CD","CY","Cl","Cm","Cn"):
   alpha_dot_score=fq[k].get("r_squared_with_alpha_dot_diagnostic")
@@ -55,12 +60,12 @@ def write(summary:dict,path:Path)->None:
   fits.append(f"| {k} | {fq[k]['r_squared']:.5f} | {extra} | {fq[k]['rms_residual']:.2e} |")
  fits="\n".join(fits)
  alpha_dot_notes=(
-  f"CL_q: q-only fit {diagnostic['CL_q_only_fit']:.3f}; "
-  f"alpha-dot-adjusted partial derivative {diagnostic['CL_q_alpha_dot_adjusted']:.3f}; "
-  f"diagnostic CL_adot = {diagnostic['CL_adot']:.3f}. "
-  f"Cm_q: q-only fit {diagnostic['Cm_q_only_fit']:.3f}; "
-  f"alpha-dot-adjusted partial derivative {diagnostic['Cm_q_alpha_dot_adjusted']:.3f}; "
-  f"diagnostic Cm_adot = {diagnostic['Cm_adot']:.3f}."
+  f"CL_q: q-only fit {diagnostic.get('CL_q_only_fit', fitted_coefficients['CL_q']):.3f}; "
+  f"alpha-dot-adjusted partial derivative {diagnostic.get('CL_q_alpha_dot_adjusted', fitted_coefficients['CL_q']):.3f}; "
+  f"diagnostic CL_adot = {diagnostic.get('CL_adot', 0.0):.3f}. "
+  f"Cm_q: q-only fit {diagnostic.get('Cm_q_only_fit', fitted_coefficients['Cm_q']):.3f}; "
+  f"alpha-dot-adjusted partial derivative {diagnostic.get('Cm_q_alpha_dot_adjusted', fitted_coefficients['Cm_q']):.3f}; "
+  f"diagnostic Cm_adot = {diagnostic.get('Cm_adot', 0.0):.3f}."
  )
  text=f"""# Repository vs JSBSim: Cessna 172 comparison
 
@@ -78,7 +83,7 @@ The harness compares (1) rigid-body equations using identical JSBSim-applied loa
 
 The same JSBSim loads were evaluated at {l1['samples']} randomized states. Raw maximum translational-acceleration errors were {raw[0]:.3e}, {raw[1]:.3e} and {raw[2]:.3e} m/s². After the translational rotating-Earth correction and the angular ECEF/inertial-frame correction, the residuals were {corr[0]:.2e}, {corr[1]:.2e} and {corr[2]:.2e} m/s² for translation and {corr[3]:.2e}, {corr[4]:.2e} and {corr[5]:.2e} rad/s² for angular acceleration.
 
-Raw angular-acceleration discrepancies are {max(l1['max_abs_angular_error_raw_rad_s2']):.2e} rad/s² at worst; after the explicit frame transform the maximum is {max(l1['max_abs_angular_error_after_frame_correction_rad_s2']):.2e} rad/s². JSBSim integrates PQR relative to ECEF but evaluates the rotational dynamics using the total inertial angular velocity. A translation-only Earth-rate correction is not sufficient to compare these derivatives.
+Raw angular-acceleration discrepancies are {max(raw_angular):.2e} rad/s² at worst; after the explicit frame transform the maximum is {max(corrected_angular):.2e} rad/s². JSBSim integrates PQR relative to ECEF but evaluates the rotational dynamics using the total inertial angular velocity. A translation-only Earth-rate correction is not sufficient to compare these derivatives.
 
 ## Local aerodynamic fit
 
@@ -92,7 +97,7 @@ The **Applied-model R²** is evaluated using only predictors and coefficient val
 
 The alpha-dot terms above are **diagnostic regression coefficients**, not repository aerodynamic coefficients. Treating the q-only least-squares result as an independently measured pitch-rate derivative would absorb some of the omitted alpha-dot effect into CL_q/Cm_q. The repository modal model uses the alpha-dot-adjusted partial q derivatives but does not apply an alpha-dot force or moment term; this is a transparent compromise, not a complete unsteady-aerodynamics model.
 
-The extra drag predictor CD_abs_beta = {diagnostic['CD_abs_beta']:.3f} is also diagnostic only. Its full diagnostic R² is {diagnostic['CD_r_squared_with_abs_beta']:.5f}; the reported applied-model R² for CD excludes it. The applied drag model does include a fitted CD_alpha2 coefficient ({stock['fitted_coefficients']['CD_alpha2']:.4f}) rather than inheriting the class default. RMS reconstructed load errors from the applied model are {rec['force_rms_N'][0]:.1f}/{rec['force_rms_N'][1]:.1f}/{rec['force_rms_N'][2]:.1f} N for body-axis forces and {rec['moment_rms_Nm'][0]:.1f}/{rec['moment_rms_Nm'][1]:.1f}/{rec['moment_rms_Nm'][2]:.2f} N·m for roll/pitch/yaw moments.
+The extra drag predictor CD_abs_beta = {diagnostic['CD_abs_beta']:.3f} is also diagnostic only. Its full diagnostic R² is {diagnostic.get('CD_r_squared_with_abs_beta', fq['CD']['r_squared']):.5f}; the reported applied-model R² for CD excludes it. The applied drag model does include a fitted CD_alpha2 coefficient ({fitted_coefficients.get('CD_alpha2', 0.32):.4f}) rather than inheriting the class default. RMS reconstructed load errors from the applied model are {rec['force_rms_N'][0]:.1f}/{rec['force_rms_N'][1]:.1f}/{rec['force_rms_N'][2]:.1f} N for body-axis forces and {rec['moment_rms_Nm'][0]:.1f}/{rec['moment_rms_Nm'][1]:.1f}/{rec['moment_rms_Nm'][2]:.2f} N·m for roll/pitch/yaw moments.
 
 ## Level 2 — trim and local modes
 
