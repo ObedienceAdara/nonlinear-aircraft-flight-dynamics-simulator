@@ -286,3 +286,14 @@ def test_report_writer_exposes_absolute_response_scales(tmp_path):
     assert "RMS absolute error" in report
     assert "body-axis forward velocity" in report
     assert "peak change" in report
+
+def test_report_writer_labels_unsupported_fit_terms(tmp_path):
+    from report import write
+
+    summary = json.loads((CMP / "results" / "summary.json").read_text())
+    output = tmp_path / "REPORT.md"
+    write(summary, output)
+    report = output.read_text()
+    assert "diagnostic only" in report
+    assert "does not independently validate either aerodynamic model" in report
+    assert "CD_alpha2" in report
