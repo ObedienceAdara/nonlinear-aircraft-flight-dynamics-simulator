@@ -200,3 +200,8 @@ def test_angular_frame_transform_reduces_to_euler_equation_without_earth_rate():
     expected = np.linalg.solve(inertia, moment - np.cross(omega, inertia @ omega))
     actual = C.jsbsim_ecef_angular_acceleration(np.zeros(3), omega, moment, inertia)
     np.testing.assert_allclose(actual, expected, rtol=1e-13, atol=1e-13)
+
+def test_all_deployed_fitted_coefficients_are_finite(fitted):
+    _, _, _, coeffs, _ = fitted
+    assert coeffs
+    assert all(np.isfinite(value) for value in coeffs.values())
