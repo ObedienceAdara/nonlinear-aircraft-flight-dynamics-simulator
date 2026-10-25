@@ -389,3 +389,11 @@ def test_eom_report_separates_translation_and_angular_frame_corrections(plane):
     assert max(translation_only[:3]) < 1e-8
     assert max(translation_only[3:]) > 1e-5
     assert max(fully_corrected[3:]) < 1e-10
+
+def test_fit_rejects_empty_data_arrays(plane):
+    mp = plane.mass_properties()
+    data = {key: np.array([], dtype=float) for key in
+            ("alpha", "beta", "de", "da", "dr", "p", "q", "r", "alpha_dot",
+             "CL", "CD", "CY", "Cl", "Cm", "Cn")}
+    with pytest.raises(ValueError, match="at least one sample"):
+        fit(data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"])
