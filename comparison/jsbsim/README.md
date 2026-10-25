@@ -12,11 +12,11 @@ The generated report is \`results/REPORT.md\`; numeric data and the compared mat
 
 Install the optional dependency and run the suite:
 
-\`\`\`bash
+```bash
 python -m pip install -e ".[dev,compare]"
 pytest
 python comparison/jsbsim/run_comparison.py
-\`\`\`
+```
 
 The script typically takes tens of seconds. It writes four plots, the machine-readable summary, and the Markdown report to \`comparison/jsbsim/results/\`. The runtime-generated aircraft XML is written under \`comparison/jsbsim/build/\` and is ignored by Git.
 
