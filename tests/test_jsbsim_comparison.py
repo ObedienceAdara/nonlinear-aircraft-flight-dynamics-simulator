@@ -205,3 +205,9 @@ def test_all_deployed_fitted_coefficients_are_finite(fitted):
     _, _, _, coeffs, _ = fitted
     assert coeffs
     assert all(np.isfinite(value) for value in coeffs.values())
+
+def test_aerodynamic_identification_is_reproducible(fitted, plane):
+    _, _, _, coeffs, data = fitted
+    mp = plane.mass_properties()
+    repeat, _ = fit(data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"])
+    assert repeat == pytest.approx(coeffs, rel=1e-12, abs=1e-12)
