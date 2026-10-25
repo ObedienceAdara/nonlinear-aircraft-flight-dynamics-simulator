@@ -184,3 +184,11 @@ def test_loaded_cg_remains_laterally_centered():
     assert model_builder._loaded_cg_in(root)[1] == pytest.approx(0.0, abs=1e-12)
     lateral_payload_moment = sum(weight * y for _, weight, _, y, _ in model_builder.PAYLOAD)
     assert lateral_payload_moment == pytest.approx(0.0, abs=1e-12)
+
+def test_angular_frame_correction_removes_ecef_inertial_residual(plane):
+    result = C.eom_check(plane, n=15, seed=7)
+    raw = result["max_abs_angular_error_raw_rad_s2"]
+    corrected = result["max_abs_angular_error_after_frame_correction_rad_s2"]
+    assert max(raw) > 1e-5
+    assert max(corrected) < 1e-10
+    assert max(corrected) < max(raw) * 1e-4
