@@ -49,12 +49,15 @@ def test_aero_fit_is_good_where_model_can_represent_it(fitted):
 
 
 def test_trim_and_modes_match_jsbsim(plane, fitted):
-    aircraft, env, _, _, _ = fitted
+    aircraft, env, _, fitted_coefficients, _ = fitted
     result = C.trim_and_modes(plane, aircraft, env)
     jsb, repo = result["trim"]["jsbsim"], result["trim"]["repo"]
     assert repo["alpha_deg"] == pytest.approx(jsb["alpha_deg"], abs=.05)
     assert repo["elevator_deg"] == pytest.approx(jsb["elevator_deg"], abs=.5)
-    assert repo["thrust_N"] == pytest.approx(jsb["thrust_N"], rel=.05)
+    assert repo["thrust_N"] == pytest.approx(jsb["thrust_N"], rel=.05), (
+        f"thrust mismatch; fitted CD terms="
+        f"{ {key: fitted_coefficients[key] for key in ('CD0', 'CD_alpha', 'CD_alpha2', 'CD_de2')} }"
+    )
     for name in ("short_period", "dutch_roll"):
         assert result["modes_repo"][name]["wn_rad_s"] == pytest.approx(
             result["modes_jsbsim"][name]["wn_rad_s"], rel=.02
