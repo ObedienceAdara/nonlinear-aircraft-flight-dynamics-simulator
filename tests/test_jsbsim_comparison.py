@@ -347,3 +347,12 @@ def test_angular_frame_transform_handles_diagonal_inertia():
     expected_i_dot = np.linalg.solve(inertia, moment - np.cross(omega_i, inertia @ omega_i))
     expected = expected_i_dot + np.cross(omega_i, omega_e)
     np.testing.assert_allclose(actual, expected, rtol=1e-13, atol=1e-13)
+
+def test_angular_frame_transform_preserves_finite_results_for_coupled_inertia():
+    omega_e = np.array([7.2921150e-5, 0.0, 0.0])
+    omega_rel = np.array([0.03, -0.07, 0.02])
+    moment = np.array([-5.0, 7.0, 4.0])
+    inertia = np.array([[1300., 0., 18.], [0., 1800., 0.], [18., 0., 2700.]])
+    result = C.jsbsim_ecef_angular_acceleration(omega_e, omega_rel, moment, inertia)
+    assert result.shape == (3,)
+    assert np.isfinite(result).all()
