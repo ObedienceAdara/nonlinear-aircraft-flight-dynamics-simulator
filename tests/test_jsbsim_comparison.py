@@ -380,3 +380,12 @@ def test_fit_quality_residuals_match_applied_coefficient_prediction(fitted):
     residual = data["CL"] - predicted
     assert quality["CL"]["rms_residual"] == pytest.approx(np.sqrt(np.mean(residual**2)), abs=1e-12)
     assert quality["CL"]["max_residual"] == pytest.approx(np.max(np.abs(residual)), abs=1e-12)
+
+
+def test_eom_report_separates_translation_and_angular_frame_corrections(plane):
+    result = C.eom_check(plane, n=12, seed=3)
+    translation_only = result["max_abs_error_after_earth_rotation"]
+    fully_corrected = result["max_abs_error_after_frame_corrections"]
+    assert max(translation_only[:3]) < 1e-8
+    assert max(translation_only[3:]) > 1e-5
+    assert max(fully_corrected[3:]) < 1e-10
