@@ -20,10 +20,15 @@ def _series(history, controls, environment, aircraft):
     """Reconstruct engineering quantities from the stored simulation history.
 
     Surface deflections used to reconstruct aerodynamic loads are taken from
-    ``history.actuator_deflection_for_state_rad``. Index ``i`` therefore uses
-    the actuator position that was active during the RK4 interval that produced
-    ``state[i]``. The separate ``actuator_deflection_rad`` history remains the
-    node/interval actuator history used for control-input visualization.
+    ``history.actuator_deflection_for_state_rad``, which is aligned to each
+    output state node. With an ``ActuatorSet``, the actuator's interval-held
+    deflection is used. Without actuators, the value is the direct control
+    callback's value at that node; the nonlinear trajectory itself has used
+    stage-time control values at the RK4 abscissae. This node sample is not an
+    average of the input over the preceding integration interval.
+
+    The separate ``actuator_deflection_rad`` array records the surface value
+    held over each interval and is used for interval/control-input visualization.
 
     ``controls`` is retained in the public signature for compatibility but is
     intentionally not consulted for surface deflections.
