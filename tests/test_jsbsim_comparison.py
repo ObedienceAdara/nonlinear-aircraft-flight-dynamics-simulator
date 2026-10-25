@@ -134,3 +134,15 @@ def test_sideslip_drag_diagnostic_does_not_inflate_applied_model_r_squared(fitte
     assert "CD_r_squared_with_abs_beta" in diagnostics
     assert diagnostics["CD_r_squared_with_abs_beta"] >= quality["CD"]["r_squared"] - 1e-10
     assert "CD_abs_beta" not in coeffs
+
+def test_fit_can_score_a_fixed_coefficient_set(fitted, plane):
+    _, _, _, coeffs, data = fitted
+    mp = plane.mass_properties()
+    fixed, quality = fit(
+        data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"],
+        fixed_coefficients=coeffs,
+    )
+    assert fixed == pytest.approx(coeffs)
+    assert quality["CL"]["r_squared"] == pytest.approx(
+        quality["CL"]["r_squared"]
+    )
