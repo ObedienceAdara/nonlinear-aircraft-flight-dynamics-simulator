@@ -87,8 +87,27 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
     including CD_alpha2. An additional abs(beta) regression is diagnostic only
     and never contributes to the deployed CD R².
     """
-    alpha, beta, de, da, dr = (np.asarray(data[key], dtype=float)
-                                for key in ("alpha", "beta", "de", "da", "dr"))
+    if not np.isfinite(airspeed_m_s) or airspeed_m_s <= 0.0:
+        raise ValueError("airspeed_m_s must be finite and positive")
+    if not np.isfinite(span_m) or span_m <= 0.0:
+        raise ValueError("span_m must be finite and positive")
+    if not np.isfinite(chord_m) or chord_m <= 0.0:
+        raise ValueError("chord_m must be finite and positive")
+    required = ("alpha", "beta", "de", "da", "dr", "p", "q", "r", "alpha_dot",
+                "CL", "CD", "CY", "Cl", "Cm", "Cn")
+    missing_data = sorted(set(required) - set(data))
+    if missing_data:
+        raise ValueError(f"sample data missing required channels: {missing_data}")
+    data_vectors = {key: np.asarray(data[key], dtype=float) for key in required}
+    sample_count = len(data_vectors["alpha"])
+    if sample_count == 0:
+        raise ValueError("at least one sample is required for aerodynamic identification")
+    for key, values in data_vectors.items():
+        if values.ndim != 1 or len(values) != sample_count:
+            raise ValueError(f"sample channel {key!r} must be a 1-D array of length {sample_count}")
+        if not np.isfinite(values).all():
+            raise ValueError(f"sample channel {key!r} contains non-finite values")
+    alpha, beta, de, da, dr = (data_vectors[key] for key in ("alpha", "beta", "de", "da", "dr"))
     p_hat = np.asarray(data["p"], dtype=float) * span_m / (2 * airspeed_m_s)
     q_hat = np.asarray(data["q"], dtype=float) * chord_m / (2 * airspeed_m_s)
     r_hat = np.asarray(data["r"], dtype=float) * span_m / (2 * airspeed_m_s)
