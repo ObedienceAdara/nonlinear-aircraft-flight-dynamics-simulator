@@ -413,3 +413,9 @@ def test_fit_rejects_mismatched_sample_lengths(fitted, plane):
     invalid["Cm"] = invalid["Cm"][:-1]
     with pytest.raises(ValueError, match="Cm.*length"):
         fit(invalid, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"])
+
+def test_fit_rejects_nonpositive_airspeed(fitted, plane):
+    _, _, _, _, data = fitted
+    mp = plane.mass_properties()
+    with pytest.raises(ValueError, match="airspeed_m_s"):
+        fit(data, 0.0, mp["wing_span_m"], mp["mean_chord_m"])
