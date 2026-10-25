@@ -161,3 +161,18 @@ def test_loaded_cg_is_weighted_from_empty_aircraft_and_payload():
     assert x_in == pytest.approx(45.3523, abs=0.02)
     assert y_in == pytest.approx(0.0, abs=1e-12)
     assert z_in == pytest.approx(32.4930, abs=0.02)
+
+def test_generated_thrust_location_matches_loaded_cg():
+    import xml.etree.ElementTree as ET
+
+    build_root = model_builder.build_model()
+    xml_path = build_root / "aircraft" / model_builder.MODEL_NAME / (
+        model_builder.MODEL_NAME + ".xml"
+    )
+    root = ET.parse(xml_path).getroot()
+    thrust = root.find("external_reactions/force[@name='thrust']/location")
+    assert thrust is not None
+    expected = model_builder._loaded_cg_in(root)
+    actual = tuple(float(thrust.find(axis).text) for axis in "xyz")
+    assert actual == pytest.approx(expected, abs=1e-9)
+    assert actual != pytest.approx((41.0, 0.0, 36.5), abs=0.1)
