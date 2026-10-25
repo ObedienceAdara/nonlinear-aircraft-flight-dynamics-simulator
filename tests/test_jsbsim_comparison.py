@@ -126,3 +126,11 @@ def test_drag_r_squared_uses_only_supported_terms(fitted):
         (observed - np.mean(observed)) ** 2
     )
     assert quality["CD"]["r_squared"] == pytest.approx(r_squared, abs=1e-12)
+
+def test_sideslip_drag_diagnostic_does_not_inflate_applied_model_r_squared(fitted):
+    _, _, quality, coeffs, _ = fitted
+    diagnostics = quality["diagnostics"]
+    assert "CD_abs_beta" in diagnostics
+    assert "CD_r_squared_with_abs_beta" in diagnostics
+    assert diagnostics["CD_r_squared_with_abs_beta"] >= quality["CD"]["r_squared"] - 1e-10
+    assert "CD_abs_beta" not in coeffs
