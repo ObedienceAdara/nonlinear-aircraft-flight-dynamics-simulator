@@ -40,6 +40,10 @@ def build_aircraft() -> AircraftModel:
         wing_area_m2=16.2,
         wing_span_m=10.9,
         mean_chord_m=1.49,
+        # Explicit generic-demo assumption: aerodynamic coefficient moments are
+        # interpreted about a reference point 0.15 m forward of the CG. This is
+        # illustrative, not aircraft-specific data. The trim is sensitive to it;
+        # use the measured/reference-frame-consistent offset when real data exist.
         cg_to_ref_m=np.array([0.15, 0.0, 0.0]),
     )
     aero = AeroCoefficients(
