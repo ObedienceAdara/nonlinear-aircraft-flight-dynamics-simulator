@@ -44,7 +44,7 @@ def jsbsim_ecef_angular_acceleration(
 
 def eom_check(J:JsbPlane,n:int=40,seed:int=1)->dict:
  """Compare equations while explicitly reconciling ECEF and inertial frames."""
- rng=np.random.default_rng(seed); raw=[]; corrected=[]; kin_euler=[]; kin_ned=[]
+ rng=np.random.default_rng(seed); raw=[]; earth_corrected=[]; corrected=[]; kin_euler=[]; kin_ned=[]
  angular_raw=[]; angular_corrected=[]
  for _ in range(n):
   x,controls=_random_state(rng); J.set_state(x,ALT,controls); mp=J.mass_properties()
@@ -60,14 +60,17 @@ def eom_check(J:JsbPlane,n:int=40,seed:int=1)->dict:
   omega_e_body=C.T@omega_e_ned
   r_ned=np.array([0.,0.,-(WGS84_A+ALT)]); v_ned=C@x[:3]
   rotation=C.T@(-np.cross(omega_e_ned,np.cross(omega_e_ned,r_ned))-2*np.cross(omega_e_ned,v_ned))
-  corrected_d=ours.copy(); corrected_d[:3]+=rotation
+  earth_d=ours.copy(); earth_d[:3]+=rotation
+  corrected_d=earth_d.copy()
   # JSBSim's PQR are ECEF-relative. Correct the repository's inertial-Euler
   # derivative using the full inertial angular rate and the transport term,
   # not just the translational rotating-Earth correction.
   corrected_d[3:]=jsbsim_ecef_angular_acceleration(
       omega_e_body, x[3:6], moment, geo.inertia_kg_m2
   )
-  raw.append(np.abs(ours-jd[:6])); corrected.append(np.abs(corrected_d-jd[:6]))
+  raw.append(np.abs(ours-jd[:6]))
+  earth_corrected.append(np.abs(earth_d-jd[:6]))
+  corrected.append(np.abs(corrected_d-jd[:6]))
   angular_raw.append(np.abs(ours[3:6]-jd[3:6]))
   angular_corrected.append(np.abs(corrected_d[3:6]-jd[3:6]))
   kin_euler.append(np.abs(euler_rates(x[6],x[7],*x[3:6])-jd[6:9]))
@@ -75,7 +78,7 @@ def eom_check(J:JsbPlane,n:int=40,seed:int=1)->dict:
  mx=lambda a:np.max(a,axis=0).tolist()
  return {"samples":n,"channels_linear_m_s2":["udot","vdot","wdot"],"channels_angular_rad_s2":["pdot","qdot","rdot"],
    "max_abs_error_raw":mx(raw),
-   "max_abs_error_after_earth_rotation":mx(corrected),
+   "max_abs_error_after_earth_rotation":mx(earth_corrected),
    "max_abs_error_after_frame_corrections":mx(corrected),
    "max_abs_angular_error_raw_rad_s2":mx(angular_raw),
    "max_abs_angular_error_after_frame_correction_rad_s2":mx(angular_corrected),
