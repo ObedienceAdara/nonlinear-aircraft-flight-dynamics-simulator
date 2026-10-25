@@ -25,6 +25,19 @@ SIGNAL_LABELS = {
  "psi":"heading angle", "alpha":"angle of attack", "beta":"sideslip angle",
  "altitude":"altitude",
 }
+SIGNAL_UNITS = {
+ "u":"m/s (body-axis forward velocity)", "v":"m/s", "w":"m/s",
+ "p":"rad/s", "q":"rad/s", "r":"rad/s",
+ "phi":"rad", "theta":"rad", "psi":"rad", "alpha":"rad", "beta":"rad",
+ "altitude":"m",
+}
+SIGNAL_LABELS = {
+ "u":"u — body-axis forward velocity", "v":"v — lateral body velocity",
+ "w":"w — vertical body velocity", "p":"p — roll rate", "q":"q — pitch rate",
+ "r":"r — yaw rate", "phi":"roll angle", "theta":"pitch angle",
+ "psi":"heading angle", "alpha":"angle of attack", "beta":"sideslip angle",
+ "altitude":"altitude",
+}
 def _case_rows(cases):
  out=[]
  for key,case in cases.items():
@@ -35,7 +48,7 @@ def _case_rows(cases):
     f"| {e['rms_diff']:.3e} | {e['max_diff_pct_of_peak']:.1f}% "
     f"| {e['rms_diff_pct_of_peak']:.1f}% |"
    )
- return "\n".join(out)
+ return "\\n".join(out)
 
 def write(summary:dict,path:Path)->None:
  l1=summary["level1_equations_of_motion"]; stock=summary["stock"]; diag=summary["alpha_dot_terms_off"]
@@ -58,7 +71,7 @@ def write(summary:dict,path:Path)->None:
   extra=(f"{alpha_dot_score:.5f}" if alpha_dot_score is not None
          else f"{beta_score:.5f}" if beta_score is not None else "—")
   fits.append(f"| {k} | {fq[k]['r_squared']:.5f} | {extra} | {fq[k]['rms_residual']:.2e} |")
- fits="\n".join(fits)
+ fits="\\n".join(fits)
  alpha_dot_notes=(
   f"CL_q: q-only fit {diagnostic.get('CL_q_only_fit', fitted_coefficients['CL_q']):.3f}; "
   f"alpha-dot-adjusted partial derivative {diagnostic.get('CL_q_alpha_dot_adjusted', fitted_coefficients['CL_q']):.3f}; "
