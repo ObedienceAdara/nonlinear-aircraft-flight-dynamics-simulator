@@ -17,9 +17,35 @@ def _random_state(rng):
              rng.uniform(-.8,.8),rng.uniform(-.4,.4),rng.uniform(-3,3)])
  return x,(rng.normal()*.05,rng.normal()*.05,rng.normal()*.05,200.)
 
+def jsbsim_ecef_angular_acceleration(
+    omega_ecef_body: np.ndarray,
+    omega_ecef_relative_body: np.ndarray,
+    moment_body: np.ndarray,
+    inertia_body: np.ndarray,
+) -> np.ndarray:
+    """Return JSBSim's body-axis derivative of ECEF-relative PQR.
+
+    JSBSim integrates PQR relative to ECEF, but applies Euler's rigid-body
+    equation using the total inertial angular velocity. Its implementation
+    (FGAccelerations::CalculatePQRdot) first computes the inertial angular
+    acceleration and then adds the rotating-frame transport term.
+    """
+    omega_ecef_body = np.asarray(omega_ecef_body, dtype=float)
+    omega_rel = np.asarray(omega_ecef_relative_body, dtype=float)
+    moment_body = np.asarray(moment_body, dtype=float)
+    inertia_body = np.asarray(inertia_body, dtype=float)
+    omega_inertial_body = omega_rel + omega_ecef_body
+    omega_inertial_dot_body = np.linalg.solve(
+        inertia_body,
+        moment_body - np.cross(omega_inertial_body, inertia_body @ omega_inertial_body),
+    )
+    return omega_inertial_dot_body + np.cross(omega_inertial_body, omega_ecef_body)
+
+
 def eom_check(J:JsbPlane,n:int=40,seed:int=1)->dict:
- """Feed JSBSim's applied loads to repo equations and account analytically for Earth rotation."""
+ """Compare equations while explicitly reconciling ECEF and inertial frames."""
  rng=np.random.default_rng(seed); raw=[]; corrected=[]; kin_euler=[]; kin_ned=[]
+ angular_raw=[]; angular_corrected=[]
  for _ in range(n):
   x,controls=_random_state(rng); J.set_state(x,ALT,controls); mp=J.mass_properties()
   geo=VehicleGeometry(mp["mass_kg"],mp["inertia_kg_m2"],mp["wing_area_m2"],mp["wing_span_m"],mp["mean_chord_m"])
@@ -27,16 +53,32 @@ def eom_check(J:JsbPlane,n:int=40,seed:int=1)->dict:
   s=AircraftState(np.array([0.,0.,-ALT]),x[:3],x[3:6],q); g=J.environment()["gravity_m_s2"]
   d=rigid_body_derivative(s,force,moment,np.array([0.,0.,g]),geo)
   ours=np.concatenate([d.velocity_body_m_s,d.omega_body_rad_s]); jd=J.derivatives()
-  C=dcm_body_to_ned_from_quat(q); omega_e=OMEGA_EARTH*np.array([1.,0.,0.])
+  C=dcm_body_to_ned_from_quat(q)
+  # At the equator, the ECEF angular velocity in the local NED frame is
+  # [Omega, 0, 0]. Transform that rate to body axes before building PQR_i.
+  omega_e_ned=OMEGA_EARTH*np.array([1.,0.,0.])
+  omega_e_body=C.T@omega_e_ned
   r_ned=np.array([0.,0.,-(WGS84_A+ALT)]); v_ned=C@x[:3]
-  rotation=C.T@(-np.cross(omega_e,np.cross(omega_e,r_ned))-2*np.cross(omega_e,v_ned))
+  rotation=C.T@(-np.cross(omega_e_ned,np.cross(omega_e_ned,r_ned))-2*np.cross(omega_e_ned,v_ned))
   corrected_d=ours.copy(); corrected_d[:3]+=rotation
+  # JSBSim's PQR are ECEF-relative. Correct the repository's inertial-Euler
+  # derivative using the full inertial angular rate and the transport term,
+  # not just the translational rotating-Earth correction.
+  corrected_d[3:]=jsbsim_ecef_angular_acceleration(
+      omega_e_body, x[3:6], moment, geo.inertia_kg_m2
+  )
   raw.append(np.abs(ours-jd[:6])); corrected.append(np.abs(corrected_d-jd[:6]))
+  angular_raw.append(np.abs(ours[3:6]-jd[3:6]))
+  angular_corrected.append(np.abs(corrected_d[3:6]-jd[3:6]))
   kin_euler.append(np.abs(euler_rates(x[6],x[7],*x[3:6])-jd[6:9]))
   kin_ned.append(np.abs(v_ned-J.ned_velocity()))
  mx=lambda a:np.max(a,axis=0).tolist()
  return {"samples":n,"channels_linear_m_s2":["udot","vdot","wdot"],"channels_angular_rad_s2":["pdot","qdot","rdot"],
-   "max_abs_error_raw":mx(raw),"max_abs_error_after_earth_rotation":mx(corrected),
+   "max_abs_error_raw":mx(raw),
+   "max_abs_error_after_earth_rotation":mx(corrected),
+   "max_abs_error_after_frame_corrections":mx(corrected),
+   "max_abs_angular_error_raw_rad_s2":mx(angular_raw),
+   "max_abs_angular_error_after_frame_correction_rad_s2":mx(angular_corrected),
    "max_abs_euler_rate_error_rad_s":mx(kin_euler),"max_abs_ned_velocity_error_m_s":mx(kin_ned)}
 
 STATE8=("u","v","w","p","q","r","phi","theta"); OUR_IDX=[3,4,5,6,7,8,9,10]
