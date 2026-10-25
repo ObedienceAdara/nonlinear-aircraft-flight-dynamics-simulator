@@ -123,11 +123,16 @@ def test_absolute_sideslip_drag_coefficient_is_optional_and_applied():
     with_beta_drag = coefficient_buildup(
         *args, AeroCoefficients(CD_abs_beta=extra_coefficient)
     )
+    alpha = args[0]
+    beta = args[1]
+    elevator = args[8][1]
+    default_coefficients = AeroCoefficients()
     assert baseline["CD"] == pytest.approx(
-        AeroCoefficients().CD0
-        + AeroCoefficients().CD_alpha * args[0]
-        + AeroCoefficients().CD_alpha2 * args[0] ** 2
-        + AeroCoefficients().CD_de2 * args[1] ** 2
+        default_coefficients.CD0
+        + default_coefficients.CD_alpha * alpha
+        + default_coefficients.CD_alpha2 * alpha**2
+        + default_coefficients.CD_de2 * elevator**2
+        + default_coefficients.CD_abs_beta * abs(beta)
     )
     assert with_beta_drag["CD"] - baseline["CD"] == pytest.approx(
         extra_coefficient * abs(args[1])
