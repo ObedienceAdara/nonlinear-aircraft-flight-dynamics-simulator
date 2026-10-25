@@ -138,6 +138,8 @@ The environment layer includes:
 
 The default main.py case deliberately holds the atmosphere fixed at the standard-atmosphere condition for 1,000 m, even while altitude changes. The CSV and plots report that same environment instead of displaying altitude-varying ISA values that were not used by the dynamics. The aircraft is initialized from the numerical trim solver at 55 m/s, and the baseline controls and actuator positions start at that trim. Scheduled elevator, aileron, rudder, and throttle commands are increments from the trim baseline.
 
+Deterministic time-dependent control and environment callbacks are evaluated at all four RK4 stages. With no actuator model, surface commands are stage-sampled; with an `ActuatorSet`, surface positions are updated once at the interval boundary and held through that interval, while throttle remains stage-sampled. Grid-aligned command transitions use the left limit at the preceding step's endpoint, then the new value at the next step's start. The default `main.py` scenario uses the deterministic `OneMinusCosineGust`; it does **not** instantiate `DrydenTurbulence`. Because Dryden is a discrete stateful filter, a future coupling should advance it once per turbulence interval and hold each generated sample through the RK4 stages.
+
 The project-level demonstration deliberately includes a scheduled gust so the disturbance can be traced through the chain:
 
 ```text
