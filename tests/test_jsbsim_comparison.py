@@ -302,7 +302,7 @@ def test_report_writer_labels_unsupported_fit_terms(tmp_path):
     output = tmp_path / "REPORT.md"
     write(summary, output)
     report = output.read_text()
-    assert "diagnostic only" in report
+    assert "diagnostic regression coefficients" in report
     assert "does not independently validate either aerodynamic model" in report
     assert "CD_alpha2" in report
 
