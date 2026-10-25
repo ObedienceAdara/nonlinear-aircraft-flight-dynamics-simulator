@@ -167,10 +167,13 @@ class Simulator:
         still sampled at the RK4 stage times. Without actuators, surface
         commands are evaluated at every RK4 stage.
 
-        ``actuator_deflection_rad[i]`` records the surface deflection held for
-        interval i (after its boundary update when actuators are enabled).
-        ``actuator_deflection_for_state_rad[i]`` records the surface deflection
-        at the corresponding output node for load reconstruction. For smooth
+        ``actuator_deflection_rad[i]`` records the surface value selected at
+        interval i's boundary: the updated/held deflection with actuators, or
+        the start-time command sample without actuators. Direct-control surfaces
+        may vary at the RK4 stages, so the boundary sample is not necessarily
+        held over that interval.
+        ``actuator_deflection_for_state_rad[i]`` records the surface value at
+        the corresponding output state node for load reconstruction. For smooth
         direct-control callbacks, that node value is the endpoint command; it
         is not an average of the surface command over the interval.
 
