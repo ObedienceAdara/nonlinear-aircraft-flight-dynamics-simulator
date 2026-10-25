@@ -197,36 +197,37 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
     quality["diagnostics"] = diagnostics
     return coefficients, quality
 
-def reconstruction_error(coeffs: dict, data: dict, geometry, cd_abs_beta: float = 0.0) -> dict:
-    """Check fitted loads by rebuilding JSBSim sampled body-axis loads with repo equations."""
+def reconstruction_error(coeffs: dict, data: dict, geometry) -> dict:
+    """Rebuild JSBSim sampled loads and quantify the implemented beta-drag term."""
     from aircraft6dof.aero import AeroCoefficients, aerodynamic_loads
 
     aero = AeroCoefficients(**coeffs)
+    aero_without_beta_drag = AeroCoefficients(**{**coeffs, "CD_abs_beta": 0.0})
     force_errors, moment_errors, force_errors_without_beta_drag = [], [], []
     for i in range(len(data["alpha"])):
         velocity = np.array([data["u"][i], data["vv"][i], data["w"][i]])
-        force, moment, _ = aerodynamic_loads(
+        args = (
             data["rho"], velocity, data["alpha"][i], data["beta"][i],
             data["p"][i], data["q"][i], data["r"][i], geometry,
-            np.array([data["da"][i], data["de"][i], data["dr"][i]]), aero,
+            np.array([data["da"][i], data["de"][i], data["dr"][i]]),
         )
+        force, moment, _ = aerodynamic_loads(*args, aero)
+        force_without_beta, _, _ = aerodynamic_loads(*args, aero_without_beta_drag)
         jsb_force = np.array([data["fx"][i], data["fy"][i], data["fz"][i]])
         jsb_moment = np.array([data["mx"][i], data["my"][i], data["mz"][i]])
         force_errors.append(force - jsb_force)
-        alpha, beta = data["alpha"][i], data["beta"][i]
-        qS = 0.5 * data["rho"] * float(velocity @ velocity) * geometry.wing_area_m2
-        extra_drag = cd_abs_beta * abs(beta) * qS
-        beta_drag_wind = extra_drag * np.array([np.cos(alpha) * np.cos(beta), np.sin(beta), np.sin(alpha) * np.cos(beta)])
-        force_errors_without_beta_drag.append(force - (jsb_force + beta_drag_wind))
+        force_errors_without_beta_drag.append(force_without_beta - jsb_force)
         moment_errors.append(moment - jsb_moment)
 
     force_errors = np.asarray(force_errors)
+    force_errors_without_beta_drag = np.asarray(force_errors_without_beta_drag)
     moment_errors = np.asarray(moment_errors)
-    clean_force_errors = np.asarray(force_errors_without_beta_drag)
     return {
         "force_rms_N": np.sqrt(np.mean(force_errors**2, axis=0)).tolist(),
         "force_max_N": np.max(np.abs(force_errors), axis=0).tolist(),
-        "force_rms_without_sideslip_drag_N": np.sqrt(np.mean(clean_force_errors**2, axis=0)).tolist(),
+        "force_rms_without_abs_sideslip_drag_N": np.sqrt(
+            np.mean(force_errors_without_beta_drag**2, axis=0)
+        ).tolist(),
         "moment_rms_Nm": np.sqrt(np.mean(moment_errors**2, axis=0)).tolist(),
         "moment_max_Nm": np.max(np.abs(moment_errors), axis=0).tolist(),
         "force_span_N": np.std(np.array([data["fx"], data["fy"], data["fz"]]), axis=1).tolist(),
