@@ -266,3 +266,11 @@ def test_elevator_doublet_pitch_rate_error_has_absolute_scale(plane, fitted):
     row = C.compare_case("elevator_doublet", jsb_case, repo_case)["primary"]["q"]
     assert 0.0 < row["max_abs_diff"] < 0.02
     assert 0.0 < row["rms_diff"] < row["max_abs_diff"]
+
+def test_response_percentages_are_normalized_by_peak_change():
+    jc = {"p": np.array([0.0, 1.0, 0.0])}
+    rc = {"p": np.array([0.0, 0.8, 0.0])}
+    result = C.compare_case("aileron_pulse", jc, rc)["primary"]["p"]
+    assert result["jsbsim_peak_change"] == pytest.approx(1.0)
+    assert result["max_diff_pct_of_peak"] == pytest.approx(20.0)
+    assert result["max_abs_diff"] == pytest.approx(0.2)
