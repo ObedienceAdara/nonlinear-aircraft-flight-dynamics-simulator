@@ -118,7 +118,9 @@ The current canonical implementation assumes a local flat-Earth inertial/navigat
 
 ## Environment
 
-The atmosphere utility is based on standard-atmosphere layer equations through 20 km. The default demo evaluates it at 1,000 m and holds the resulting density and speed of sound constant throughout the run. Reporting derives temperature and pressure from those same active environment values; it does not substitute standard-atmosphere values at the aircraft's instantaneous altitude. A future altitude-varying case must update the environment consistently with the propagated state at each integration stage.
+The atmosphere utility is based on standard-atmosphere layer equations through 20 km. The default demo evaluates it at 1,000 m and holds the resulting density and speed of sound constant throughout the run. Reporting derives temperature and pressure from those same active environment values; it does not substitute standard-atmosphere values at the aircraft's instantaneous altitude.
+
+The aircraft integrator evaluates deterministic time-dependent control and environment callbacks at the four RK4 stage times. A future altitude-varying atmosphere should therefore derive its value from the stage state/time consistently. The deterministic one-minus-cosine gust used by `main.py` is evaluated at each stage. By contrast, `DrydenTurbulence.step()` is a discrete stochastic update: generate one sample per turbulence interval and hold it through the RK4 stages unless a separate stochastic-integration scheme is implemented. Do not advance that stateful filter from an environment callback invoked by RK4.
 
 ## Turbulence
 
