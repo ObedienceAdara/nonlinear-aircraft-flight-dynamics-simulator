@@ -28,7 +28,9 @@ def _series(history, controls, environment, aircraft):
     average of the input over the preceding integration interval.
 
     The separate ``actuator_deflection_rad`` array records the surface value
-    held over each interval and is used for interval/control-input visualization.
+    selected at the interval boundary and is used for interval/control-input
+    visualization. Without actuators it is only the start-time sample, because
+    direct-control callbacks may vary at the RK4 stages.
 
     ``controls`` is retained in the public signature for compatibility but is
     intentionally not consulted for surface deflections.
