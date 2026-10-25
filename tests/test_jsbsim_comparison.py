@@ -108,3 +108,9 @@ def test_alpha_dot_terms_are_diagnostic_not_deployed_coefficients(fitted):
     assert "Cm_adot" not in coeffs
     assert np.isfinite(quality["diagnostics"]["CL_adot"])
     assert np.isfinite(quality["diagnostics"]["Cm_adot"])
+
+def test_drag_quadratic_alpha_coefficient_is_fitted(fitted):
+    _, _, _, coeffs, _ = fitted
+    assert "CD_alpha2" in coeffs
+    assert np.isfinite(coeffs["CD_alpha2"])
+    assert coeffs["CD_alpha2"] != pytest.approx(0.32, abs=1e-6)
