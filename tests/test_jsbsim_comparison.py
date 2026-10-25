@@ -3,6 +3,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 pytest.importorskip("jsbsim", reason="JSBSim comparison requires the .[compare] extra")
@@ -11,6 +12,7 @@ if str(CMP) not in sys.path:
     sys.path.insert(0, str(CMP))
 import compare as C  # noqa: E402
 from identify_aero import collect, fit  # noqa: E402
+import make_model as model_builder  # noqa: E402
 from jsb import JsbPlane  # noqa: E402
 from models import build_environment, build_repo_model  # noqa: E402
 
@@ -27,26 +29,26 @@ def fitted(plane):
                    (0., jt["elevator_rad"], 0.), n=200)
     mp = plane.mass_properties()
     coeffs, quality = fit(data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"])
-    return build_repo_model(plane, coeffs), build_environment(plane, C.ALT), quality
+    return build_repo_model(plane, coeffs), build_environment(plane, C.ALT), quality, coeffs, data
 
 
 def test_equations_of_motion_match_jsbsim(plane):
     result = C.eom_check(plane, n=15)
     assert max(result["max_abs_error_after_earth_rotation"][:3]) < 1e-8
-    assert max(result["max_abs_error_after_earth_rotation"][3:]) < 2e-4
+    assert max(result["max_abs_error_after_frame_corrections"][3:]) < 1e-10
     assert max(result["max_abs_euler_rate_error_rad_s"]) < 1e-9
     assert max(result["max_abs_ned_velocity_error_m_s"]) < 1e-9
 
 
 def test_aero_fit_is_good_where_model_can_represent_it(fitted):
-    _, _, quality = fitted
+    _, _, quality, coeffs, data = fitted
     for channel in ("CL", "CY", "Cl", "Cm", "Cn"):
         assert quality[channel]["r_squared"] > .99, channel
     assert quality["diagnostics"]["CD_abs_beta"] == pytest.approx(.17, abs=.01)
 
 
 def test_trim_and_modes_match_jsbsim(plane, fitted):
-    aircraft, env, _ = fitted
+    aircraft, env, _, _, _ = fitted
     result = C.trim_and_modes(plane, aircraft, env)
     jsb, repo = result["trim"]["jsbsim"], result["trim"]["repo"]
     assert repo["alpha_deg"] == pytest.approx(jsb["alpha_deg"], abs=.05)
