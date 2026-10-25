@@ -244,7 +244,14 @@ class Simulator:
 
             def derivative_at_stage(x, stage_time_s):
                 nonlocal stage_surfaces
-                stage_command = at(controls, float(stage_time_s))
+                stage_input_time = float(stage_time_s)
+                # Treat a grid-aligned discontinuity as right-continuous at the
+                # next interval's start, but use the left limit for this
+                # interval's k4 stage. Otherwise the new command would receive
+                # a spurious dt/6 contribution to the preceding interval.
+                if stage_input_time > ti + 0.5 * dt_s:
+                    stage_input_time = float(np.nextafter(stage_input_time, ti))
+                stage_command = at(controls, stage_input_time)
                 if actuators is None:
                     stage_surfaces = np.array([
                         stage_command.aileron,
@@ -253,7 +260,7 @@ class Simulator:
                     ], dtype=float)
                 else:
                     stage_surfaces = actual_surfaces
-                stage_environment = at(environment, float(stage_time_s))
+                stage_environment = at(environment, stage_input_time)
                 effective = ControlInput(
                     aileron=float(stage_surfaces[0]),
                     elevator=float(stage_surfaces[1]),
