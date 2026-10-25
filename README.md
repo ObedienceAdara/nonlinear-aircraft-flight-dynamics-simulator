@@ -449,6 +449,8 @@ These limitations are intentionally explicit so future fidelity upgrades can be 
 ├── tests/                     # Verification tests
 ├── studies/
 │   └── adverse_yaw/           # Adverse yaw study: aileron-only vs rudder-coordinated roll
+├── comparison/
+│   └── jsbsim/                # Controlled JSBSim comparison harness and results
 ├── docs/
 │   ├── ARCHITECTURE.md           # Software and physical architecture
 │   ├── EQUATIONS.md              # Equations and sign/frame conventions
