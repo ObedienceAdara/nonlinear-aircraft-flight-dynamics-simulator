@@ -225,3 +225,10 @@ def test_phugoid_frequency_is_checked_after_alpha_dot_adjustment(plane, fitted):
     jsb_mode = result["modes_jsbsim"]["phugoid"]
     repo_mode = result["modes_repo"]["phugoid"]
     assert repo_mode["wn_rad_s"] == pytest.approx(jsb_mode["wn_rad_s"], rel=0.06)
+
+def test_phugoid_damping_is_checked_after_alpha_dot_adjustment(plane, fitted):
+    aircraft, env, _, _, _ = fitted
+    result = C.trim_and_modes(plane, aircraft, env)
+    jsb_mode = result["modes_jsbsim"]["phugoid"]
+    repo_mode = result["modes_repo"]["phugoid"]
+    assert repo_mode["zeta"] == pytest.approx(jsb_mode["zeta"], rel=0.15)
