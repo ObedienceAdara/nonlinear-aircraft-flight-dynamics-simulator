@@ -256,3 +256,13 @@ def test_alpha_dot_disabled_diagnostic_changes_reference_not_repo_model(plane):
     assert diagnostic["level2"]["modes_jsbsim"]["short_period"]["zeta"] != pytest.approx(
         stock["level2"]["modes_jsbsim"]["short_period"]["zeta"], abs=1e-4
     )
+
+def test_elevator_doublet_pitch_rate_error_has_absolute_scale(plane, fitted):
+    aircraft, env, _, _, _ = fitted
+    result = C.trim_and_modes(plane, aircraft, env)
+    case = C.CASES["elevator_doublet"]
+    jsb_case = C.run_jsbsim_case(plane, result["_trim_jsbsim"], case["du"], 12.0, 0.01)
+    repo_case = C.run_repo_case(aircraft, env, result["_trim_repo"], case["du"], 12.0, 0.01)
+    row = C.compare_case("elevator_doublet", jsb_case, repo_case)["primary"]["q"]
+    assert 0.0 < row["max_abs_diff"] < 0.02
+    assert 0.0 < row["rms_diff"] < row["max_abs_diff"]
