@@ -274,3 +274,15 @@ def test_response_percentages_are_normalized_by_peak_change():
     assert result["jsbsim_peak_change"] == pytest.approx(1.0)
     assert result["max_diff_pct_of_peak"] == pytest.approx(20.0)
     assert result["max_abs_diff"] == pytest.approx(0.2)
+
+def test_report_writer_exposes_absolute_response_scales(tmp_path):
+    from report import write
+
+    summary = json.loads((CMP / "results" / "summary.json").read_text())
+    output = tmp_path / "REPORT.md"
+    write(summary, output)
+    report = output.read_text()
+    assert "Maximum absolute error" in report
+    assert "RMS absolute error" in report
+    assert "body-axis forward velocity" in report
+    assert "peak change" in report
