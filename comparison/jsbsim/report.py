@@ -54,7 +54,7 @@ def write(summary:dict,path:Path)->None:
  fits=[]
  for k in ("CL","CD","CY","Cl","Cm","Cn"):
   alpha_dot_score=fq[k].get("r_squared_with_alpha_dot_diagnostic")
-  beta_score=diagnostic.get("CD_r_squared_with_abs_beta") if k=="CD" else None
+  beta_score=diagnostic.get("CD_r_squared_without_abs_beta") if k=="CD" else None
   extra=(f"{alpha_dot_score:.5f}" if alpha_dot_score is not None
          else f"{beta_score:.5f}" if beta_score is not None else "—")
   fits.append(f"| {k} | {fq[k]['r_squared']:.5f} | {extra} | {fq[k]['rms_residual']:.2e} |")
@@ -87,9 +87,9 @@ Raw angular-acceleration discrepancies are {max(raw_angular):.2e} rad/s² at wor
 
 ## Local aerodynamic fit
 
-The **Applied-model R²** is evaluated using only predictors and coefficient values actually used by the repository model. The diagnostic column shows the score after temporarily adding alpha-dot for CL/Cm or absolute sideslip for CD. Those extra predictors are not silently included in the deployed-model score.
+The **Applied-model R²** is evaluated using only predictors and coefficient values actually used by the repository model. The alternate diagnostic column shows the joint alpha-dot regression for CL/Cm and the drag-fit ablation with CD_abs_beta removed for CD.
 
-| Channel | Applied-model R² | R² with extra diagnostic term | RMS coefficient residual |
+| Channel | Applied-model R² | Alternate diagnostic R² | RMS coefficient residual |
 |---|---:|---:|---:|
 {fits}
 
@@ -97,7 +97,7 @@ The **Applied-model R²** is evaluated using only predictors and coefficient val
 
 The alpha-dot terms above are **diagnostic regression coefficients**, not repository aerodynamic coefficients. Treating the q-only least-squares result as an independently measured pitch-rate derivative would absorb some of the omitted alpha-dot effect into CL_q/Cm_q. The repository modal model uses the alpha-dot-adjusted partial q derivatives but does not apply an alpha-dot force or moment term; this is a transparent compromise, not a complete unsteady-aerodynamics model.
 
-The extra drag predictor CD_abs_beta = {diagnostic['CD_abs_beta']:.3f} is also diagnostic only. Its full diagnostic R² is {diagnostic.get('CD_r_squared_with_abs_beta', fq['CD']['r_squared']):.5f}; the reported applied-model R² for CD excludes it. The applied drag model does include a fitted CD_alpha2 coefficient ({fitted_coefficients.get('CD_alpha2', 0.32):.4f}) rather than inheriting the class default. RMS reconstructed load errors from the applied model are {rec['force_rms_N'][0]:.1f}/{rec['force_rms_N'][1]:.1f}/{rec['force_rms_N'][2]:.1f} N for body-axis forces and {rec['moment_rms_Nm'][0]:.1f}/{rec['moment_rms_Nm'][1]:.1f}/{rec['moment_rms_Nm'][2]:.2f} N·m for roll/pitch/yaw moments.
+The fitted absolute-sideslip drag coefficient CD_abs_beta = {fitted_coefficients.get('CD_abs_beta', 0.0):.3f} is implemented by the repository model and included in its applied-model R² ({fq['CD']['r_squared']:.5f}). Removing that term in an ablation drops R² to {diagnostic.get('CD_r_squared_without_abs_beta', fq['CD']['r_squared']):.5f}. The applied drag model also fits CD_alpha2 ({fitted_coefficients.get('CD_alpha2', 0.32):.4f}) rather than inheriting the class default. RMS reconstructed load errors from the applied model are {rec['force_rms_N'][0]:.1f}/{rec['force_rms_N'][1]:.1f}/{rec['force_rms_N'][2]:.1f} N for body-axis forces and {rec['moment_rms_Nm'][0]:.1f}/{rec['moment_rms_Nm'][1]:.1f}/{rec['moment_rms_Nm'][2]:.2f} N·m for roll/pitch/yaw moments.
 
 ## Level 2 — trim and local modes
 
