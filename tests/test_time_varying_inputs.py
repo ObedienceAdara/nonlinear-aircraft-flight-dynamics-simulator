@@ -107,3 +107,23 @@ def test_actuated_surfaces_are_held_but_throttle_is_sampled_at_rk4_stages():
     )
     # x_dot = throttle(t) = t; RK4 integrates this exactly over the interval.
     assert history.state[-1, 0] == pytest.approx(0.005, abs=1e-14)
+
+
+def test_grid_aligned_step_command_does_not_leak_into_previous_interval():
+    aircraft = RecordingAircraft()
+
+    def controls(time_s):
+        # The command turns on exactly at the boundary between the two steps.
+        return ControlInput(aileron=1.0 if time_s >= 0.1 else 0.0)
+
+    history = Simulator(aircraft).run(
+        initial_state(),
+        controls,
+        Environment(gravity_ned_m_s2=np.zeros(3)),
+        duration_s=0.2,
+        dt_s=0.1,
+        guard=SimulationGuardConfig(enabled=False),
+    )
+
+    assert history.state[1, 0] == pytest.approx(0.0, abs=1e-15)
+    assert history.state[2, 0] == pytest.approx(0.1, abs=1e-14)
