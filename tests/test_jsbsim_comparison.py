@@ -91,3 +91,11 @@ def test_collected_alpha_dot_is_finite_and_varies(fitted):
     assert "alpha_dot" in data
     assert np.isfinite(data["alpha_dot"]).all()
     assert np.std(data["alpha_dot"]) > 1e-8
+
+def test_pitch_rate_derivatives_are_adjusted_for_alpha_dot(fitted):
+    _, _, quality, coeffs, _ = fitted
+    diagnostic = quality["diagnostics"]
+    assert coeffs["CL_q"] == pytest.approx(diagnostic["CL_q_alpha_dot_adjusted"])
+    assert coeffs["Cm_q"] == pytest.approx(diagnostic["Cm_q_alpha_dot_adjusted"])
+    assert abs(coeffs["CL_q"] - diagnostic["CL_q_only_fit"]) > 0.2
+    assert abs(coeffs["Cm_q"] - diagnostic["Cm_q_only_fit"]) > 0.5
