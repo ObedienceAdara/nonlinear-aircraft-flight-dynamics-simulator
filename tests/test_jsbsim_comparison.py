@@ -218,3 +218,10 @@ def test_aerodynamic_identification_is_reproducible(fitted, plane):
     mp = plane.mass_properties()
     repeat, _ = fit(data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"])
     assert repeat == pytest.approx(coeffs, rel=1e-12, abs=1e-12)
+
+def test_phugoid_frequency_is_checked_after_alpha_dot_adjustment(plane, fitted):
+    aircraft, env, _, _, _ = fitted
+    result = C.trim_and_modes(plane, aircraft, env)
+    jsb_mode = result["modes_jsbsim"]["phugoid"]
+    repo_mode = result["modes_repo"]["phugoid"]
+    assert repo_mode["wn_rad_s"] == pytest.approx(jsb_mode["wn_rad_s"], rel=0.06)
