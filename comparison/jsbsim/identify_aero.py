@@ -124,14 +124,19 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
             # supported coefficients in the repository's coefficient object.
             X_extended = np.column_stack([X, alpha_dot_hat])
             extended_solution, *_ = np.linalg.lstsq(X_extended, y, rcond=None)
-            selected_solution = extended_solution[:-1]
+            # Adjust only the rate derivative while retaining the static/control
+            # coefficients from the supported-term fit. Alpha-dot and q are
+            # correlated around this local condition, so allowing the nuisance
+            # column to re-fit CL0/Cm0, alpha slope, and elevator effectiveness
+            # can perturb trim even though alpha-dot itself is not implemented
+            # in the model. This is a deliberate local partial-derivative
+            # correction, not a claim that the full extended model is deployed.
+            selected_solution = model_solution.copy()
+            q_index = names.index(f"{channel}_q")
+            selected_solution[q_index] = extended_solution[q_index]
             diagnostics[f"{channel}_adot"] = float(extended_solution[-1])
-            diagnostics[f"{channel}_q_only_fit"] = float(
-                model_solution[names.index(f"{channel}_q")]
-            )
-            diagnostics[f"{channel}_q_alpha_dot_adjusted"] = float(
-                selected_solution[names.index(f"{channel}_q")]
-            )
+            diagnostics[f"{channel}_q_only_fit"] = float(model_solution[q_index])
+            diagnostics[f"{channel}_q_alpha_dot_adjusted"] = float(extended_solution[q_index])
             extended_metrics = _fit_metrics(y, X_extended @ extended_solution)
         effective_solution = (
             selected_solution if fixed_coefficients is None
