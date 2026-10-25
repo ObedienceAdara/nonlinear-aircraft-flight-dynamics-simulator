@@ -232,3 +232,16 @@ def test_phugoid_damping_is_checked_after_alpha_dot_adjustment(plane, fitted):
     jsb_mode = result["modes_jsbsim"]["phugoid"]
     repo_mode = result["modes_repo"]["phugoid"]
     assert repo_mode["zeta"] == pytest.approx(jsb_mode["zeta"], rel=0.15)
+
+def test_alpha_dot_ab_keeps_repository_coefficients_fixed(plane):
+    from run_comparison import pipeline
+
+    stock = pipeline(False, with_cases=False)
+    no_adot = pipeline(True, with_cases=False,
+                       common_coefficients=stock["fitted_coefficients"])
+    assert no_adot["fitted_coefficients"] == pytest.approx(stock["fitted_coefficients"])
+    assert no_adot["level2"]["modes_repo"]["phugoid"]["wn_rad_s"] == pytest.approx(
+        stock["level2"]["modes_repo"]["phugoid"]["wn_rad_s"], abs=1e-12
+    )
+    assert "independent_refit_diagnostic" in no_adot
+    assert no_adot["independent_refit_diagnostic"]["note"].find("shared stock-fit") < 0
