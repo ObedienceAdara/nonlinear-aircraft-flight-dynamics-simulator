@@ -111,7 +111,7 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
     if fixed_coefficients is not None:
         missing = sorted(set(name for _, names in plan.values() for name in names) - set(fixed_coefficients))
         if missing:
-            raise ValueError(f\"fixed_coefficients missing fitted terms: {missing}\")
+            raise ValueError(f"fixed_coefficients missing fitted terms: {missing}")
     for channel, (columns, names) in plan.items():
         X = np.column_stack(columns)
         y = np.asarray(data[channel], dtype=float)
