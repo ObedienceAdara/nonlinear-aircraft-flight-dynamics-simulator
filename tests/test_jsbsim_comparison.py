@@ -363,3 +363,9 @@ def test_alpha_dot_extended_regression_never_worsens_residual(fitted):
         assert quality[channel]["r_squared_with_alpha_dot_diagnostic"] >= (
             quality[channel]["r_squared_best_supported_terms"] - 1e-12
         )
+
+def test_fit_metrics_marks_constant_observation_r_squared_undefined():
+    from identify_aero import _fit_metrics
+
+    metrics = _fit_metrics(np.ones(6), np.ones(6))
+    assert np.isnan(metrics["r_squared"])
