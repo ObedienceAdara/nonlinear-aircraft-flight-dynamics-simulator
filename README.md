@@ -120,6 +120,8 @@ The nondimensional coefficients are converted to dimensional loads using dynamic
 
 Aerodynamic coefficient moments are interpreted about the aerodynamic reference point. VehicleGeometry.cg_to_ref_m is the body-axis vector from the centre of gravity to that point. Moments are shifted to the centre of gravity with $\mathbf M_{CG}=\mathbf M_{ref}+\mathbf r_{CG\rightarrow ref}\times\mathbf F_{aero}$.
 
+The default demo's 0.15 m forward offset is an **illustrative modelling assumption**, not a value identified for a real aircraft. It is included to exercise the reference-point moment translation; changing it materially changes trim elevator. Keep a non-zero offset only when the aerodynamic coefficients are documented about that reference point and the CG/reference-point geometry supports it. If coefficients are already defined about the CG, use a zero offset to avoid double-counting the lever-arm moment.
+
 This makes the architecture suitable for progressively replacing the generic derivative set with data from CFD, DATCOM, wind-tunnel testing or flight-test identification.
 
 ---
