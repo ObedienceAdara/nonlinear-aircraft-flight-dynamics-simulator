@@ -89,9 +89,15 @@ pitch \(\pm90^\circ\). It does not replace the quaternion nonlinear model.
 These roots are numerical diagnostics for the current generic coefficients and operating
 point. They are not validation against a real aircraft.
 
-## Current milestone
+## Current status
 
-The repository now supports nonlinear 6-DOF simulation, trim, local A/B
-linearization, flight-dynamics mode classification and linear-versus-nonlinear
-small-response comparisons. The independent JSBSim comparison layer is not part
-of this commit and remains a separate future milestone.
+The current repository supports nonlinear 6-DOF simulation, trim, local A/B
+linearization, flight-dynamics mode classification, small-response comparisons,
+and an optional JSBSim code-to-code comparison under `comparison/jsbsim/`.
+The JSBSim harness compares equations of motion, trim/modes, and small-input
+responses at one operating point. Its aerodynamic coefficients are fitted from
+JSBSim, so it is not independent aerodynamic or real-aircraft validation.
+
+See [the comparison guide](../comparison/jsbsim/README.md) and
+[the validation plan](VALIDATION.md) for assumptions, reproduced results, and
+remaining validation gaps.
