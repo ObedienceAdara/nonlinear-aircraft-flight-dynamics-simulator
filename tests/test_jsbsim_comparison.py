@@ -152,3 +152,12 @@ def test_fit_rejects_incomplete_fixed_coefficient_set(fitted, plane):
     mp = plane.mass_properties()
     with pytest.raises(ValueError, match="fixed_coefficients missing fitted terms"):
         fit(data, C.V_TRIM, mp["wing_span_m"], mp["mean_chord_m"], fixed_coefficients={})
+
+def test_loaded_cg_is_weighted_from_empty_aircraft_and_payload():
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(model_builder.source_aircraft_file()).getroot()
+    x_in, y_in, z_in = model_builder._loaded_cg_in(root)
+    assert x_in == pytest.approx(45.3523, abs=0.02)
+    assert y_in == pytest.approx(0.0, abs=1e-12)
+    assert z_in == pytest.approx(32.4930, abs=0.02)
