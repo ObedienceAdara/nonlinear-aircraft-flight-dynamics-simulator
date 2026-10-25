@@ -115,8 +115,8 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
     ones = np.ones_like(alpha)
     plan = {
         "CL": ([ones, alpha, de, q_hat], ["CL0", "CL_alpha", "CL_de", "CL_q"]),
-        "CD": ([ones, alpha, alpha**2, de**2],
-               ["CD0", "CD_alpha", "CD_alpha2", "CD_de2"]),
+        "CD": ([ones, alpha, alpha**2, de**2, np.abs(beta)],
+               ["CD0", "CD_alpha", "CD_alpha2", "CD_de2", "CD_abs_beta"]),
         "CY": ([beta, da, dr, p_hat, r_hat],
                ["CY_beta", "CY_da", "CY_dr", "CY_p", "CY_r"]),
         "Cl": ([beta, p_hat, r_hat, da, dr],
@@ -184,15 +184,15 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
             )
 
         if channel == "CD":
-            # This extra predictor is deliberately excluded from coefficients.
-            # It quantifies the value of a term the compact model cannot apply.
-            X_diagnostic = np.column_stack([X, np.abs(beta)])
-            diagnostic_solution, *_ = np.linalg.lstsq(X_diagnostic, y, rcond=None)
-            diagnostic_metrics = _fit_metrics(y, X_diagnostic @ diagnostic_solution)
-            diagnostics["CD_abs_beta"] = float(diagnostic_solution[-1])
-            diagnostics["CD_r_squared_with_abs_beta"] = diagnostic_metrics["r_squared"]
-            diagnostics["CD_rms_residual_with_abs_beta"] = diagnostic_metrics["rms_residual"]
-            diagnostics["CD_max_residual_with_abs_beta"] = diagnostic_metrics["max_residual"]
+            # Quantify the effect of removing the now-implemented beta-drag
+            # term. The reported CD R² above uses all coefficients the model
+            # actually applies, including CD_abs_beta.
+            X_without_beta = X[:, :-1]
+            without_beta_solution, *_ = np.linalg.lstsq(X_without_beta, y, rcond=None)
+            without_beta_metrics = _fit_metrics(y, X_without_beta @ without_beta_solution)
+            diagnostics["CD_r_squared_without_abs_beta"] = without_beta_metrics["r_squared"]
+            diagnostics["CD_rms_residual_without_abs_beta"] = without_beta_metrics["rms_residual"]
+            diagnostics["CD_max_residual_without_abs_beta"] = without_beta_metrics["max_residual"]
 
     quality["diagnostics"] = diagnostics
     return coefficients, quality
