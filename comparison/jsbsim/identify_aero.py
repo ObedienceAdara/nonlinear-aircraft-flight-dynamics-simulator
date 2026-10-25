@@ -131,6 +131,12 @@ def fit(data: dict, airspeed_m_s: float, span_m: float, chord_m: float,
         missing = sorted(set(name for _, names in plan.values() for name in names) - set(fixed_coefficients))
         if missing:
             raise ValueError(f"fixed_coefficients missing fitted terms: {missing}")
+        nonfinite = sorted(
+            name for name in (name for _, names in plan.values() for name in names)
+            if not np.isfinite(float(fixed_coefficients[name]))
+        )
+        if nonfinite:
+            raise ValueError(f"fixed_coefficients contains non-finite terms: {nonfinite}")
     for channel, (columns, names) in plan.items():
         X = np.column_stack(columns)
         y = np.asarray(data[channel], dtype=float)
