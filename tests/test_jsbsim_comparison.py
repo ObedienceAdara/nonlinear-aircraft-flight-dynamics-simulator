@@ -297,3 +297,19 @@ def test_report_writer_labels_unsupported_fit_terms(tmp_path):
     assert "diagnostic only" in report
     assert "does not independently validate either aerodynamic model" in report
     assert "CD_alpha2" in report
+
+def test_loaded_cg_satisfies_weighted_moment_equilibrium():
+    import xml.etree.ElementTree as ET
+
+    root = ET.parse(model_builder.source_aircraft_file()).getroot()
+    mass = root.find("mass_balance")
+    empty_weight = float(mass.find("emptywt").text)
+    empty_cg_node = mass.find("location[@name='CG']")
+    empty_cg = np.array([float(empty_cg_node.find(axis).text) for axis in "xyz"])
+    loaded_cg = np.array(model_builder._loaded_cg_in(root))
+    payload_weight = sum(item[1] for item in model_builder.PAYLOAD)
+    total_weight = empty_weight + payload_weight
+    weighted_station = empty_weight * empty_cg
+    for _, weight, x, y, z in model_builder.PAYLOAD:
+        weighted_station += weight * np.array([x, y, z])
+    np.testing.assert_allclose(total_weight * loaded_cg, weighted_station, atol=1e-8)
