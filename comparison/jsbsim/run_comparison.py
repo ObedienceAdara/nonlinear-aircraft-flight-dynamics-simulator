@@ -10,15 +10,31 @@ from models import build_environment,build_repo_model
 from plots import mode_plane,time_history
 RESULTS=Path(__file__).resolve().parent/"results"
 DT=.01
-def pipeline(no_alpha_dot:bool,with_cases:bool=True)->dict:
+def pipeline(no_alpha_dot:bool,with_cases:bool=True,common_coefficients:dict|None=None)->dict:
  J=JsbPlane(DT,no_alpha_dot=no_alpha_dot); jt=C.trim_jsbsim(J,C.V_TRIM,C.ALT)
  data=collect(J,C.V_TRIM,C.ALT,jt["alpha_rad"],(0.,jt["elevator_rad"],0.),n=400)
- mp=J.mass_properties(); coeffs,quality=fit(data,C.V_TRIM,mp["wing_span_m"],mp["mean_chord_m"])
+ mp=J.mass_properties()
+ identified,identified_quality=fit(data,C.V_TRIM,mp["wing_span_m"],mp["mean_chord_m"])
+ if common_coefficients is None:
+  coeffs,quality=identified,identified_quality
+ else:
+  # Keep the repository model fixed across stock and alpha-dot-disabled JSBSim.
+  # Independently re-fitting the second condition would confound changes to the
+  # reference model with changes to the repository's fitted q derivatives.
+  coeffs,quality=fit(data,C.V_TRIM,mp["wing_span_m"],mp["mean_chord_m"],
+                     fixed_coefficients=common_coefficients)
  aircraft=build_repo_model(J,coeffs); env=build_environment(J,C.ALT)
  out={"mass_properties":{k:(v.tolist() if hasattr(v,"tolist") else v) for k,v in mp.items()},
   "environment":{"density_kg_m3":env.density_kg_m3,"gravity_down_m_s2":float(env.gravity_ned_m_s2[2])},
   "fitted_coefficients":coeffs,"fit_quality":quality,
   "reconstruction":reconstruction_error(coeffs,data,aircraft.parameters.geometry,quality["diagnostics"]["CD_abs_beta"])}
+ if common_coefficients is not None:
+  out["independent_refit_diagnostic"]={
+   "CL_q":identified["CL_q"],"Cm_q":identified["Cm_q"],
+   "CL_adot":identified_quality["diagnostics"]["CL_adot"],
+   "Cm_adot":identified_quality["diagnostics"]["Cm_adot"],
+   "note":"Coefficients shown here were identified independently for diagnosis only; the repository model uses the shared stock-fit coefficient set."
+  }
  l2=C.trim_and_modes(J,aircraft,env); out["level2"]={k:v for k,v in l2.items() if not k.startswith("_")}; out["_series"]={}
  if with_cases:
   out["level3"]={}
@@ -36,7 +52,7 @@ def main()->None:
  t0=time.time(); RESULTS.mkdir(parents=True,exist_ok=True)
  print("Level 1: equations of motion with JSBSim's own loads ..."); level1=C.eom_check(JsbPlane(DT),n=40)
  print("Levels 2 and 3: stock Cessna 172 aerodynamic database ..."); stock=pipeline(False)
- print("Levels 2 and 3: diagnostic copy with alpha-dot terms disabled ..."); noadot=pipeline(True)
+ print("Levels 2 and 3: diagnostic copy with alpha-dot terms disabled ..."); noadot=pipeline(True,common_coefficients=stock["fitted_coefficients"])
  for key,(label,jc,rc) in stock["_series"].items():time_history(key,f"{label}: JSBSim vs this repo",jc,rc,RESULTS/f"time_{key}.png")
  mode_plane(stock["level2"],noadot["level2"],RESULTS/"modes_s_plane.png")
  summary={"condition":{"airspeed_m_s":C.V_TRIM,"altitude_m":C.ALT,"latitude_deg":0.,"heading":"north",
