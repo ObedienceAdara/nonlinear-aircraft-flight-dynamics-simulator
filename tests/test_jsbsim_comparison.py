@@ -67,7 +67,7 @@ def test_trim_and_modes_match_jsbsim(plane, fitted):
 
 
 def test_aileron_pulse_response_matches(plane, fitted):
-    aircraft, env, _ = fitted
+    aircraft, env, _, _, _ = fitted
     result = C.trim_and_modes(plane, aircraft, env)
     case = C.CASES["aileron_pulse"]
     jsb_case = C.run_jsbsim_case(plane, result["_trim_jsbsim"], case["du"], 12., .01)
