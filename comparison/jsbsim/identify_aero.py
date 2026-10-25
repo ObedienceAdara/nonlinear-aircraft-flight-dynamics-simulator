@@ -44,6 +44,7 @@ def collect(jsb, airspeed_m_s: float, altitude_m: float, alpha0: float,
         force, moment = jsb.aero_load_body()
         rows.append({
             **values, "alpha": alpha, "beta": beta,
+            "alpha_dot": jsb.alpha_dot_rad_s(),
             "da": surfaces[0], "de": surfaces[1], "dr": surfaces[2],
             **jsb.aero_coefficient_inputs(),
             "u": x[0], "vv": x[1], "w": x[2],
