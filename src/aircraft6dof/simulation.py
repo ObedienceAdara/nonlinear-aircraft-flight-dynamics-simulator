@@ -8,8 +8,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from .actuators import ActuatorSet
+from .airdata import air_data
 from .integrators import RK4StateError, rk4_step
-from .mathutils import dcm_body_to_ned_from_quat, euler321_from_quat
+from .mathutils import euler321_from_quat
 from .state import AircraftState, ControlInput
 
 
@@ -103,26 +104,13 @@ class Simulator:
                     last_valid_states=[],
                 )
 
-    @staticmethod
-    def _air_data(state: AircraftState, environment):
-        C = dcm_body_to_ned_from_quat(state.quaternion_bn)
-        v_n = C @ state.velocity_body_m_s
-        vrel_n = v_n - (environment.wind_ned_m_s + environment.gust_ned_m_s)
-        vrel_b = C.T @ vrel_n
-        V = float(np.linalg.norm(vrel_b))
-        if V > 1e-9:
-            alpha = float(np.arctan2(vrel_b[2], vrel_b[0]))
-            beta = float(np.arcsin(np.clip(vrel_b[1] / V, -1.0, 1.0)))
-        else:
-            alpha = 0.0
-            beta = 0.0
-        return V, alpha, beta
 
     @classmethod
     def _check_sanity(cls, state: AircraftState, environment, guard: SimulationGuardConfig, time_s: float, step_index: int):
         if not guard.enabled:
             return
-        V, alpha, beta = cls._air_data(state, environment)
+        air = air_data(state.velocity_body_m_s, state.quaternion_bn, environment)
+        V, alpha, beta = air.airspeed_m_s, air.alpha_rad, air.beta_rad
         angular_rate = float(np.linalg.norm(state.omega_body_rad_s))
         checks = (
             ("airspeed_magnitude", V, guard.max_airspeed_m_s, "airspeed magnitude"),

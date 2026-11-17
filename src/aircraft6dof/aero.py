@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 import numpy as np
+from .airdata import MIN_AIRSPEED_M_S,MIN_RATE_NORMALIZATION_AIRSPEED_M_S
 
 @dataclass(frozen=True)
 class AeroCoefficients:
@@ -14,7 +15,7 @@ class AeroCoefficients:
     CD_alpha:float=0.; CY_p:float=0.; CY_r:float=0.
 
 def coefficient_buildup(alpha,beta,p,q,r,V,span,chord,controls,c):
-    da,de,dr=controls; V=max(float(V),1.)
+    da,de,dr=controls; V=max(float(V),MIN_RATE_NORMALIZATION_AIRSPEED_M_S)
     ph=p*span/(2*V); qh=q*chord/(2*V); rh=r*span/(2*V)
     return {
       "CL":c.CL0+c.CL_alpha*alpha+c.CL_de*de+c.CL_q*qh,
@@ -26,7 +27,7 @@ def coefficient_buildup(alpha,beta,p,q,r,V,span,chord,controls,c):
 
 def aerodynamic_loads(rho,vrel_body,alpha,beta,p,q,r,geometry,controls,coeffs):
     V=np.linalg.norm(vrel_body)
-    if V<=1e-8:return np.zeros(3),np.zeros(3),{"CL":0,"CD":0,"CY":0,"Cl":0,"Cm":0,"Cn":0}
+    if V<=MIN_AIRSPEED_M_S:return np.zeros(3),np.zeros(3),{"CL":0,"CD":0,"CY":0,"Cl":0,"Cm":0,"Cn":0}
     c=coefficient_buildup(alpha,beta,p,q,r,V,geometry.wing_span_m,geometry.mean_chord_m,controls,coeffs)
     qb=.5*rho*V*V; S=geometry.wing_area_m2
     fw=qb*S*np.array([-c["CD"],c["CY"],-c["CL"]])

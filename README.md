@@ -485,10 +485,11 @@ Current
   │
   ▼
 Nonlinear rigid-body 6-DOF FDM
+(with trim solver, linearization/mode analysis, first-order actuators,
+ and a JSBSim code-to-code comparison already implemented)
   │
   ├── Aircraft-specific aerodynamic databases
   ├── Propulsion performance maps
-  ├── Trim solver
   ├── Higher-fidelity aircraft data and independent validation
   ├── Full turbulence / environmental models
   ├── Higher-order actuator and sensor models

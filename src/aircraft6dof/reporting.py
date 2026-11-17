@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .aero import aerodynamic_loads
+from .airdata import air_data
 from .constants import GAMMA_AIR, R_AIR
 from .mathutils import dcm_body_to_ned_from_quat
 
@@ -42,10 +43,8 @@ def _series(history, controls, environment, aircraft):
         command_vec = command_history[i]
         actual_surfaces = actuator_for_state[i]
         node_surfaces = actuator_history[i]
-        wind, gust = np.asarray(env.wind_ned_m_s), np.asarray(env.gust_ned_m_s)
-        vrel_n = vn - wind - gust; vrel_b = C.T @ vrel_n; V = float(np.linalg.norm(vrel_b))
-        alpha = float(np.arctan2(vrel_b[2], vrel_b[0])) if V > 1e-9 else 0.0
-        beta = float(np.arcsin(np.clip(vrel_b[1] / V, -1, 1))) if V > 1e-9 else 0.0
+        air = air_data(vb, quat, env)
+        vrel_b, V, alpha, beta = air.velocity_body_m_s, air.airspeed_m_s, air.alpha_rad, air.beta_rad
         qbar = 0.5 * env.density_kg_m3 * V * V
         mach = V / env.speed_of_sound_m_s if env.speed_of_sound_m_s else 0.0
         fb, mb, coeff = aerodynamic_loads(

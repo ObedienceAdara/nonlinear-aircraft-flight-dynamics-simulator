@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 from .state import AircraftState,ControlInput,Environment,VehicleGeometry
 from .aero import AeroCoefficients,aerodynamic_loads
+from .airdata import air_data
 from .propulsion import Propulsion
 from .mathutils import normalize_quaternion,quat_multiply,dcm_body_to_ned_from_quat
 
@@ -26,9 +27,8 @@ def rigid_body_derivative(s:AircraftState,force_body:np.ndarray,moment_body:np.n
     return AircraftState(C@vb,vdot,odot,qdot)
 
 def state_derivative(s:AircraftState,u:ControlInput,e:Environment,p:AircraftParameters)->AircraftState:
-    q=normalize_quaternion(s.quaternion_bn); vb=s.velocity_body_m_s; om=s.omega_body_rad_s
-    C=dcm_body_to_ned_from_quat(q); v_n=C@vb; vrel_n=v_n-(e.wind_ned_m_s+e.gust_ned_m_s); vrel_b=C.T@vrel_n
-    ur,vr,wr=vrel_b; V=max(np.linalg.norm(vrel_b),1e-9); alpha=np.arctan2(wr,ur); beta=np.arcsin(np.clip(vr/V,-1,1))
-    fb,mb,_=aerodynamic_loads(e.density_kg_m3,vrel_b,alpha,beta,*om,p.geometry,np.array([u.aileron,u.elevator,u.rudder]),p.aero)
-    fp,mp=p.propulsion.force_and_moment(u.throttle,V)
+    om=s.omega_body_rad_s
+    a=air_data(s.velocity_body_m_s,s.quaternion_bn,e)
+    fb,mb,_=aerodynamic_loads(e.density_kg_m3,a.velocity_body_m_s,a.alpha_rad,a.beta_rad,*om,p.geometry,np.array([u.aileron,u.elevator,u.rudder]),p.aero)
+    fp,mp=p.propulsion.force_and_moment(u.throttle,a.airspeed_m_s)
     return rigid_body_derivative(s,fb+fp,mb+mp,e.gravity_ned_m_s2,p.geometry)
