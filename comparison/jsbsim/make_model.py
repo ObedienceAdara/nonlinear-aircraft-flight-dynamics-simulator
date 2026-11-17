@@ -61,6 +61,38 @@ def _thrust_block(cg_in: tuple[float, float, float]) -> ET.Element:
     return ET.fromstring(xml)
 
 
+
+def _loaded_cg_in(root: ET.Element) -> tuple[float, float, float]:
+    """Calculate the payload-loaded CG in the aircraft XML's inch datum.
+
+    JSBSim's configured CG location is the empty-aircraft reference point.
+    The comparison removes the source point masses and inserts PAYLOAD, so
+    the thrust station must be weighted from that empty-aircraft CG and all
+    replacement payload stations rather than reusing the empty CG directly.
+    """
+    mass = root.find("mass_balance")
+    if mass is None:
+        raise RuntimeError("JSBSim C172 model has no mass_balance element")
+    empty_weight_node = mass.find("emptywt")
+    cg = mass.find("location[@name='CG']")
+    if empty_weight_node is None or not empty_weight_node.text:
+        raise RuntimeError("JSBSim C172 model has no parseable empty weight")
+    if cg is None or any(cg.find(axis) is None for axis in "xyz"):
+        raise RuntimeError("JSBSim C172 model has no parseable empty-aircraft CG")
+    empty_weight = float(empty_weight_node.text)
+    empty_cg = tuple(float(cg.find(axis).text) for axis in "xyz")
+    total_weight = empty_weight + sum(weight for _, weight, *_ in PAYLOAD)
+    if empty_weight <= 0.0 or total_weight <= 0.0:
+        raise RuntimeError("JSBSim empty and loaded aircraft weights must be positive")
+    weighted = [
+        empty_weight * coordinate
+        + sum(weight * station for _, weight, *xyz in PAYLOAD
+              for station, axis in zip(xyz, "xyz") if axis == coordinate_axis)
+        for coordinate_axis, coordinate in zip("xyz", empty_cg)
+    ]
+    return tuple(value / total_weight for value in weighted)
+
+
 def _zero_alpha_dot_terms(root: ET.Element) -> int:
     changed = 0
     for fn in root.iter("function"):
@@ -76,8 +108,8 @@ def _zero_alpha_dot_terms(root: ET.Element) -> int:
 def build_model(no_alpha_dot: bool = False) -> Path:
     """Write the derived model and return the JSBSim root directory.
 
-    no_alpha_dot is a diagnostic variant because the repository has no alpha-dot
-    lift/pitch terms. It helps isolate this structural source of modal mismatch.
+    Fixed thrust is applied through the CG of the replacement-payload-loaded
+    aircraft. The no-alpha-dot variant is a diagnostic model only.
     """
     src = ET.parse(source_aircraft_file()).getroot()
     root = copy.deepcopy(src)
@@ -100,10 +132,7 @@ def build_model(no_alpha_dot: bool = False) -> Path:
         for axis, value in zip("xyz", (x, y, z)):
             ET.SubElement(location, axis).text = str(value)
 
-    cg = mass.find("location[@name='CG']")
-    if cg is None or any(cg.find(axis) is None for axis in "xyz"):
-        raise RuntimeError("JSBSim C172 model has no parseable CG location")
-    cg_in = tuple(float(cg.find(axis).text) for axis in "xyz")
+    cg_in = _loaded_cg_in(root)
 
     aero = root.find("aerodynamics")
     if aero is None:

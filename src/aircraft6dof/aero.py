@@ -13,13 +13,16 @@ class AeroCoefficients:
     Cn_beta:float=.25; Cn_p:float=-.05; Cn_r:float=-.25; Cn_da:float=.03; Cn_dr:float=-.10
     # Optional derivatives default to zero until aircraft-specific values are evidenced.
     CD_alpha:float=0.; CY_p:float=0.; CY_r:float=0.
+    # Appended to preserve the positional constructor order of existing terms.
+    CD_abs_beta:float=0.
 
 def coefficient_buildup(alpha,beta,p,q,r,V,span,chord,controls,c):
     da,de,dr=controls; V=max(float(V),MIN_RATE_NORMALIZATION_AIRSPEED_M_S)
     ph=p*span/(2*V); qh=q*chord/(2*V); rh=r*span/(2*V)
     return {
       "CL":c.CL0+c.CL_alpha*alpha+c.CL_de*de+c.CL_q*qh,
-      "CD":c.CD0+c.CD_alpha*alpha+c.CD_alpha2*alpha**2+c.CD_de2*de**2,
+      "CD":(c.CD0+c.CD_alpha*alpha+c.CD_alpha2*alpha**2+c.CD_de2*de**2
+            +c.CD_abs_beta*abs(beta)),
       "CY":c.CY_beta*beta+c.CY_da*da+c.CY_dr*dr+c.CY_p*ph+c.CY_r*rh,
       "Cl":c.Cl_beta*beta+c.Cl_p*ph+c.Cl_r*rh+c.Cl_da*da+c.Cl_dr*dr,
       "Cm":c.Cm0+c.Cm_alpha*alpha+c.Cm_q*qh+c.Cm_de*de,

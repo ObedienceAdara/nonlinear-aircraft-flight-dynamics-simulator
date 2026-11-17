@@ -37,6 +37,9 @@ class JsbPlane:
             g("velocities/psidot-rad_sec")])
     def altitude_m(self)->float: return self._get("position/h-sl-ft")*FT
     def alpha_beta(self)->tuple[float,float]: return self._get("aero/alpha-rad"),self._get("aero/beta-rad")
+    def alpha_dot_rad_s(self)->float:
+        """Return JSBSim's aerodynamic angle-of-attack rate in rad/s."""
+        return float(self._get("aero/alphadot-rad_sec"))
     def surfaces(self)->np.ndarray:
         g=self._get
         return np.array([g("fcs/effective-aileron-pos"),g("fcs/elevator-pos-rad"),g("fcs/rudder-pos-rad")])

@@ -67,9 +67,9 @@ curve, which is worth seeing directly rather than taking on faith.
 Plot `02`'s third panel: sideslip also produces a rolling moment through
 dihedral effect (`Cl_beta`), and in case A that moment opposes the
 commanded roll for the first couple of seconds. Case A, despite having the
-*same* aileron deflection as case B for the *same* duration, ends up with
-*less* bank angle (39.5° vs 44.8°) by the end of the run. Adverse yaw
-doesn't just point the nose the wrong way -- the sideslip it creates eats
+*same* aileron deflection as case B for the *same* duration, reaches a lower
+maximum bank angle (38.65° versus 44.23° in the current stored run). Adverse
+yaw doesn't just point the nose the wrong way -- the sideslip it creates eats
 into the roll you asked for, too.
 
 
@@ -88,11 +88,13 @@ For the study aircraft at 55 m/s and 1,000 m in still air, the current model giv
 | Roll subsidence | -8.1276 1/s | time constant 0.123 s |
 | Spiral | +0.01685 1/s | weakly unstable, time to double about 41.1 s |
 
-**Stored-output note:** the figures and `outputs/summary.json` were generated before
-the current CG-to-aerodynamic-reference moment translation was incorporated into
-this study snapshot. Regenerate the study before interpreting its time histories,
-rudder-gain sweep or animation as results for the current equations. The mode
-values above are calculated from the current canonical implementation.
+**Stored-output note:** the figures, animation, and `outputs/summary.json` were
+refreshed in commit `8839080` after the CG-to-aerodynamic-reference moment
+translation was already present in the model. They correspond to the study
+configuration at that revision. Regenerate the outputs after changing the FDM,
+trim solver, actuator model, or study setup before interpreting them as results
+for a newer revision. The mode values above are calculated from the current
+canonical implementation.
 
 ## How this differs from `main.py`'s environment
 

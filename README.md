@@ -120,6 +120,8 @@ The nondimensional coefficients are converted to dimensional loads using dynamic
 
 Aerodynamic coefficient moments are interpreted about the aerodynamic reference point. VehicleGeometry.cg_to_ref_m is the body-axis vector from the centre of gravity to that point. Moments are shifted to the centre of gravity with $\mathbf M_{CG}=\mathbf M_{ref}+\mathbf r_{CG\rightarrow ref}\times\mathbf F_{aero}$.
 
+The default demo's 0.15 m forward offset is an **illustrative modelling assumption**, not a value identified for a real aircraft. It is included to exercise the reference-point moment translation; changing it materially changes trim elevator. Keep a non-zero offset only when the aerodynamic coefficients are documented about that reference point and the CG/reference-point geometry supports it. If coefficients are already defined about the CG, use a zero offset to avoid double-counting the lever-arm moment.
+
 This makes the architecture suitable for progressively replacing the generic derivative set with data from CFD, DATCOM, wind-tunnel testing or flight-test identification.
 
 ---
@@ -135,6 +137,8 @@ The environment layer includes:
 - a reproducible three-axis Dryden spectral filter with configurable RMS intensities and length scales.
 
 The default main.py case deliberately holds the atmosphere fixed at the standard-atmosphere condition for 1,000 m, even while altitude changes. The CSV and plots report that same environment instead of displaying altitude-varying ISA values that were not used by the dynamics. The aircraft is initialized from the numerical trim solver at 55 m/s, and the baseline controls and actuator positions start at that trim. Scheduled elevator, aileron, rudder, and throttle commands are increments from the trim baseline.
+
+Deterministic time-dependent control and environment callbacks are evaluated at all four RK4 stages. With no actuator model, surface commands are stage-sampled; with an `ActuatorSet`, surface positions are updated once at the interval boundary and held through that interval, while throttle remains stage-sampled. Grid-aligned command transitions use the left limit at the preceding step's endpoint, then the new value at the next step's start. The default `main.py` scenario uses the deterministic `OneMinusCosineGust`; it does **not** instantiate `DrydenTurbulence`. Because Dryden is a discrete stateful filter, a future coupling should advance it once per turbulence interval and hold each generated sample through the RK4 stages.
 
 The project-level demonstration deliberately includes a scheduled gust so the disturbance can be traced through the chain:
 
@@ -447,6 +451,8 @@ These limitations are intentionally explicit so future fidelity upgrades can be 
 ├── tests/                     # Verification tests
 ├── studies/
 │   └── adverse_yaw/           # Adverse yaw study: aileron-only vs rudder-coordinated roll
+├── comparison/
+│   └── jsbsim/                # Controlled JSBSim comparison harness and results
 ├── docs/
 │   ├── ARCHITECTURE.md           # Software and physical architecture
 │   ├── EQUATIONS.md              # Equations and sign/frame conventions

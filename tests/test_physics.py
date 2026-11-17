@@ -111,3 +111,29 @@ def test_rigid_body_derivative_independently_applies_force_moment_and_gravity():
     np.testing.assert_allclose(derivative.velocity_body_m_s, expected_vdot, atol=1e-12)
     np.testing.assert_allclose(derivative.omega_body_rad_s, expected_omega_dot, atol=1e-12)
     np.testing.assert_allclose(derivative.quaternion_bn, expected_qdot, atol=1e-12)
+
+
+def test_absolute_sideslip_drag_coefficient_is_optional_and_applied():
+    from aircraft6dof.aero import coefficient_buildup
+
+    args = (0.04, 0.025, 0.1, 0.02, -0.03, 50.0, 10.0, 1.5,
+            (0.01, -0.02, 0.03))
+    baseline = coefficient_buildup(*args, AeroCoefficients())
+    extra_coefficient = 0.17
+    with_beta_drag = coefficient_buildup(
+        *args, AeroCoefficients(CD_abs_beta=extra_coefficient)
+    )
+    alpha = args[0]
+    beta = args[1]
+    elevator = args[8][1]
+    default_coefficients = AeroCoefficients()
+    assert baseline["CD"] == pytest.approx(
+        default_coefficients.CD0
+        + default_coefficients.CD_alpha * alpha
+        + default_coefficients.CD_alpha2 * alpha**2
+        + default_coefficients.CD_de2 * elevator**2
+        + default_coefficients.CD_abs_beta * abs(beta)
+    )
+    assert with_beta_drag["CD"] - baseline["CD"] == pytest.approx(
+        extra_coefficient * abs(args[1])
+    )

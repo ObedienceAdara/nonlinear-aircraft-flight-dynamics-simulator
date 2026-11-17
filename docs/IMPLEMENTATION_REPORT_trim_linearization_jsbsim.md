@@ -1,6 +1,6 @@
 # Implementation report: trim, linearization and flight-dynamics modes
 
-> **Scope:** This report covers the trim, local-linearization and mode-analysis milestone. The JSBSim comparison layer is not included in this commit; it remains a separate follow-on milestone.
+> **Scope:** This report records the trim, local-linearization and mode-analysis milestone. The current branch also contains the optional JSBSim comparison under `comparison/jsbsim/`; that harness is a code-to-code consistency study, not independent aerodynamic or flight-test validation.
 
 ## Architecture introduced
 
@@ -54,8 +54,8 @@ The tests exercise Euler-rate conversion, trim equilibrium in the Euler form, Ja
 
 The current branch also retains the CG reference-point-to-centre-of-gravity moment regression, trim-consistent main-run initialization, fixed-environment reporting checks, and Dryden turbulence regression coverage.
 
-## Explicitly deferred
+## Scope boundaries and current repository status
 
-- No JSBSim dependency, model wrapper or external-comparison tests are added by this commit.
+- Historically, the original trim/linearization milestone did not include a JSBSim dependency or comparison harness. The current branch now contains that optional harness; see [the comparison guide](../comparison/jsbsim/README.md) and its [generated report](../comparison/jsbsim/results/REPORT.md).
 - No claim is made that the generic aircraft coefficients reproduce a specific aircraft.
-- The adverse-yaw study's checked-in plots, animation and JSON summary predate the current CG moment translation; regenerate them before using them as evidence for the current model revision.
+- The adverse-yaw plots, animation and JSON summary were refreshed in commit `8839080` after the CG moment translation was already present. Regenerate them after any later model, trim, actuator, or study-setup change.

@@ -38,11 +38,35 @@ def add(x, dx, a):
     )
 
 
-def rk4_step(x, dt, f, time_s: float | None = None, step_index: int | None = None):
-    k1 = f(x)
-    k2 = f(add(x, k1, dt / 2))
-    k3 = f(add(x, k2, dt / 2))
-    k4 = f(add(x, k3, dt))
+def rk4_step(
+    x,
+    dt,
+    f,
+    time_s: float | None = None,
+    step_index: int | None = None,
+    *,
+    stage_time_s: float | None = None,
+):
+    """Advance one RK4 step with optional stage-time-aware forcing.
+
+    By default, f has the legacy signature f(state). When stage_time_s is
+    supplied, f is instead called as f(state, t) at all four RK4 abscissae:
+    t, t + dt/2, t + dt/2, and t + dt. This lets callers evaluate deterministic
+    time-varying forcing at the actual RK4 stages without changing the state
+    representation.
+
+    time_s remains the diagnostic time associated with the step result. It
+    is deliberately separate from stage_time_s, the interval's start time.
+    """
+    def evaluate(state, offset):
+        if stage_time_s is None:
+            return f(state)
+        return f(state, float(stage_time_s) + offset)
+
+    k1 = evaluate(x, 0.0)
+    k2 = evaluate(add(x, k1, dt / 2), dt / 2)
+    k3 = evaluate(add(x, k2, dt / 2), dt / 2)
+    k4 = evaluate(add(x, k3, dt), dt)
 
     q_candidate = x.quaternion_bn + dt * (
         k1.quaternion_bn + 2 * k2.quaternion_bn + 2 * k3.quaternion_bn + k4.quaternion_bn

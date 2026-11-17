@@ -146,14 +146,29 @@ class Simulator:
         actuators: ActuatorSet | None = None,
         guard: SimulationGuardConfig | None = None,
     ):
-        """Integrate with persistent actuators and fail-fast state/sanity guards.
+        """Integrate the aircraft with RK4, optional actuators, and health guards.
 
-        ``actuator_deflection_rad[i]`` is the actual actuator position at the
-        start of simulation interval ``i``. ``actuator_deflection_for_state_rad[i]``
-        is the actuator position that was active during the RK4 step that
-        produced ``state[i]``. Keeping both histories avoids silently pairing a
-        state node with the actuator from the following interval during
-        reporting.
+        Controls and environment may be constants or callbacks accepting time.
+        Time-aware callbacks are evaluated at each RK4 stage. If actuator
+        dynamics are supplied, the surface actuator states are advanced once
+        at the interval boundary and held through that interval; throttle is
+        still sampled at the RK4 stage times. Without actuators, surface
+        commands are evaluated at every RK4 stage.
+
+        ``actuator_deflection_rad[i]`` records the surface value selected at
+        interval i's boundary: the updated/held deflection with actuators, or
+        the start-time command sample without actuators. Direct-control surfaces
+        may vary at the RK4 stages, so the boundary sample is not necessarily
+        held over that interval.
+        ``actuator_deflection_for_state_rad[i]`` records the surface value at
+        the corresponding output state node for load reconstruction. For smooth
+        direct-control callbacks, that node value is the endpoint command; it
+        is not an average of the surface command over the interval.
+
+        A stateful discrete source such as DrydenTurbulence.step() must not be
+        advanced from the environment callback, because RK4 calls that callback
+        multiple times per step. Advance such a source once per interval and
+        return its cached sample for the four stages instead.
         """
         guard = SimulationGuardConfig() if guard is None else guard
         n = int(round(duration_s / dt_s))
@@ -204,8 +219,6 @@ class Simulator:
                 command.rudder,
                 command.throttle,
             ])
-            env = at(environment, ti)
-
             if actuators is None:
                 actual_surfaces = command_vec[:3].copy()
             else:
@@ -213,23 +226,51 @@ class Simulator:
 
             C[i] = command_vec
             A[i] = actual_surfaces
-            A_state[i + 1] = actual_surfaces
-            effective = ControlInput(
-                aileron=float(actual_surfaces[0]),
-                elevator=float(actual_surfaces[1]),
-                rudder=float(actual_surfaces[2]),
-                throttle=float(command_vec[3]),
-            )
+
+            # Keep the actuator model discrete at the integration boundaries,
+            # but evaluate time-dependent forcing and direct controls at every
+            # RK4 stage. This avoids mutating persistent actuator state four
+            # times during one aircraft step.
+            stage_surfaces = actual_surfaces.copy()
+
+            def derivative_at_stage(x, stage_time_s):
+                nonlocal stage_surfaces
+                stage_input_time = float(stage_time_s)
+                # Treat a grid-aligned discontinuity as right-continuous at the
+                # next interval's start, but use the left limit for this
+                # interval's k4 stage. Otherwise the new command would receive
+                # a spurious dt/6 contribution to the preceding interval.
+                if stage_input_time > ti + 0.5 * dt_s:
+                    stage_input_time = float(np.nextafter(stage_input_time, ti))
+                stage_command = at(controls, stage_input_time)
+                if actuators is None:
+                    stage_surfaces = np.array([
+                        stage_command.aileron,
+                        stage_command.elevator,
+                        stage_command.rudder,
+                    ], dtype=float)
+                else:
+                    stage_surfaces = actual_surfaces
+                stage_environment = at(environment, stage_input_time)
+                effective = ControlInput(
+                    aileron=float(stage_surfaces[0]),
+                    elevator=float(stage_surfaces[1]),
+                    rudder=float(stage_surfaces[2]),
+                    throttle=float(stage_command.throttle),
+                )
+                return self.aircraft.derivative(x, effective, stage_environment)
 
             try:
                 s = rk4_step(
                     s,
                     dt_s,
-                    lambda x: self.aircraft.derivative(x, effective, env),
+                    derivative_at_stage,
                     time_s=float(t[i + 1]),
                     step_index=i + 1,
+                    stage_time_s=ti,
                 )
-                self._check_sanity(s, env, guard, float(t[i + 1]), i + 1)
+                env_end = at(environment, float(t[i + 1]))
+                self._check_sanity(s, env_end, guard, float(t[i + 1]), i + 1)
             except RK4StateError as exc:
                 raise SimulationDivergenceError(
                     time_s=float(t[i + 1]),
@@ -243,6 +284,7 @@ class Simulator:
                 exc.args = (exc.report(),)
                 raise
 
+            A_state[i + 1] = stage_surfaces
             X[i + 1] = s.vector()
             E[i + 1] = euler321_from_quat(s.quaternion_bn)
             recent_valid.append((float(t[i + 1]), s.vector().copy()))
